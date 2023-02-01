@@ -22,6 +22,7 @@ module "terraform-azurerm-aks" {
   source = "github.com/yunikon-dev/terraform-azurerm-aks"
 
   resource_group_name = azurerm_resource_group.main.name
+  cluster_name        = "testakscluster"
   location            = azurerm_resource_group.main.location
   dns_prefix          = "testjeaks"
   default_node_pool_vnet_subnet_id = azurerm_subnet.main.id
