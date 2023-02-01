@@ -1,6 +1,4 @@
-data "azurerm_resource_group" "main" {
-  name = var.resource_group_name
-}
+ var.resource_group_name
 
 moved {
   from = module.ssh-key.tls_private_key.ssh
@@ -14,9 +12,9 @@ resource "tls_private_key" "ssh" {
 }
 
 resource "azurerm_kubernetes_cluster" "main" {
-  location                            = coalesce(var.location, data.azurerm_resource_group.main.location)
+  location                            = coalesce(var.location, "westeurope")
   name                                = var.cluster_name
-  resource_group_name                 = data.azurerm_resource_group.main.name
+  resource_group_name                 = var.resource_group_name
   api_server_authorized_ip_ranges     = var.api_server_authorized_ip_ranges
   automatic_channel_upgrade           = var.automatic_channel_upgrade
   azure_policy_enabled                = var.azure_policy_enabled
