@@ -294,7 +294,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   count = var.create_analytics_workspace ? 1 : 0
 
   location            = coalesce(var.location, data.azurerm_resource_group.main.location)
-  name                = var.cluster_log_analytics_workspace_name == null ? "${var.prefix}-workspace" : var.cluster_log_analytics_workspace_name
+  name                = var.cluster_log_analytics_workspace_name == null ? "${var.cluster_name}-workspace" : var.cluster_log_analytics_workspace_name
   resource_group_name = coalesce(var.log_analytics_workspace_resource_group_name, var.resource_group_name)
   retention_in_days   = var.log_retention_in_days
   sku                 = var.log_analytics_workspace_sku
