@@ -6,7 +6,7 @@ resource "azurerm_resource_group" "main" {
 
 resource "azurerm_virtual_network" "main" {
   name                = "test-terraform-azurerm-aks-vnet"
-  address_space       = ["10.0.0.0/16"]
+  address_space       = ["172.0.0.0/16"]
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
 }
@@ -15,7 +15,7 @@ resource "azurerm_subnet" "main" {
   name                 = "aks-subnet"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.0.1.0/24"]
+  address_prefixes     = ["172.7.93.0/24"]
 }
 
 module "terraform-azurerm-aks" {
