@@ -638,7 +638,7 @@ variable "rbac_aad_tenant_id" {
 variable "role_based_access_control_enabled" {
   type        = bool
   description = "(Optional) Enable Role Based Access Control."
-  default     = false
+  default     = true
   nullable    = false
 }
 
