@@ -19,6 +19,11 @@ parameters:
   type: string
   default: 'AzureRM'
 
+- name: workingDirectory
+  displayName: "Working directory:"
+  type: string
+  default: "./test/fixture"
+
 # Edit the 'pool' key to use self-hosted agents
 # i.e: pool: MyFavoriteAgent
 pool:
@@ -60,7 +65,7 @@ steps:
     scriptLocation: inlineScript
     azureSubscription: '${{ parameters.serviceConnection }}'
     addSpnToEnvironment: true
-    workingDirectory: '${{ parameters.workingDirectory }}/${{ parameters.moduleName }}'
+    workingDirectory: '${{ parameters.workingDirectory }}'
     inlineScript: |
       export ARM_CLIENT_ID=$servicePrincipalId
       export ARM_CLIENT_SECRET=$servicePrincipalKey
