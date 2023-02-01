@@ -15,12 +15,6 @@ variable "admin_username" {
   default     = null
 }
 
-variable "automatic_channel_upgrade_check" {
-  type        = bool
-  description = "Automatic channel upgrade check"
-  default     = false
-}
-
 variable "create_analytics_workspace" {
   type        = bool
   description = "Create a Log Analytics Workspace for Kubernetes."
