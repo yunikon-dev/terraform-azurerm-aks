@@ -10,7 +10,7 @@ parameters:
 - name: goVersion
   displayName: "Go version:"
   type: string
-  default: "1.19.0"
+  default: "1.19.5"
 
 # Create a Service Connection in your Azure DevOps project
 # Use the name of that Service Connection here
