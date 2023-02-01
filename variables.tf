@@ -15,6 +15,30 @@ variable "admin_username" {
   default     = null
 }
 
+variable "automatic_channel_upgrade_check" {
+  type        = bool
+  description = "Automatic channel upgrade check"
+  default     = false
+}
+
+variable "create_analytics_workspace" {
+  type        = bool
+  description = "Create a Log Analytics Workspace for Kubernetes."
+  default     = false
+}
+
+variable "create_analytics_solution" {
+  type        = bool
+  description = "Create a Log Analytics Solution for Kubernetes."
+  default     = false
+}
+
+variable "cluster_log_analytics_workspace_name" {
+  type        = string
+  description = "Name for the Log Analytics Workspace for Kubernetes."
+  default     = null
+}
+
 # Default Node Pool variables
 variable "default_node_pool_availability_zones" {
   type        = list(string)

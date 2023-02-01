@@ -37,7 +37,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   workload_identity_enabled           = var.workload_identity_enabled
 
   dynamic "default_node_pool" {
-    for_each = var.enable_auto_scaling == true ? [] : ["manual_scaling"]
+    for_each = var.default_node_pool_enable_auto_scaling == true ? [] : ["manual_scaling"]
 
     content {
       name                         = var.default_node_pool_name
@@ -64,7 +64,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     }
   }
   dynamic "default_node_pool" {
-    for_each = var.enable_auto_scaling == true ? ["auto_scaling"] : []
+    for_each = var.default_node_pool_enable_auto_scaling == true ? ["auto_scaling"] : []
 
     content {
       name                         = var.default_node_pool_name

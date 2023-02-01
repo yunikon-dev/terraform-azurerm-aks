@@ -1,5 +1,5 @@
 # List of outputs
-output "name" {
-  value       = var.name
-  description = "Name of the resource."
+output "cluster_name" {
+  value       = var.cluster_name
+  description = "Cluster name of the resource."
 }
