@@ -43,7 +43,7 @@ resource "azurerm_kubernetes_cluster" "main" {
       enable_node_public_ip        = var.default_node_pool_enable_node_public_ip
       max_count                    = var.default_node_pool_max_count
       max_pods                     = var.default_node_pool_max_pods
-      min_count                    = 1
+      min_count                    = var.default_node_pool_min_count
       node_count                   = var.default_node_pool_node_count
       node_labels                  = var.default_node_pool_node_labels
       only_critical_addons_enabled = var.default_node_pool_only_critical_addons_enabled
