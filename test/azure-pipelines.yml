@@ -76,4 +76,4 @@ steps:
       go mod init ./
       go mod tidy
       go build terraform-azurerm-aks.go
-      go test -v
+      go test ./ -v
