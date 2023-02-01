@@ -286,13 +286,13 @@ variable "disk_encryption_set_id" {
   default     = null
 }
 
-variable "enable_host_encryption" {
+variable "default_node_pool_enable_host_encryption" {
   type        = bool
   description = "Enable Host Encryption for default node pool. Encryption at host feature [must be enabled on the Subscription](https://docs.microsoft.com/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)"
   default     = false
 }
 
-variable "enable_node_public_ip" {
+variable "default_node_pool_enable_node_public_ip" {
   type        = bool
   description = "(Optional) Nodes in the default node pool will have a Public IP Address if this option is set to true. Defaults to `false`."
   default     = false
@@ -548,7 +548,7 @@ variable "oidc_issuer_enabled" {
   default     = false
 }
 
-variable "only_critical_addons_enabled" {
+variable "default_node_pool_only_critical_addons_enabled" {
   type        = bool
   description = "(Optional) Enabling this option will taint default node pool with `CriticalAddonsOnly=true:NoSchedule` taint. Changing this forces a new resource to be created."
   default     = null
@@ -642,7 +642,7 @@ variable "role_based_access_control_enabled" {
   nullable    = false
 }
 
-variable "scale_down_mode" {
+variable "default_node_pool_scale_down_mode" {
   type        = string
   description = "(Optional) Specifies the autoscaling behaviour of the AKS Cluster. If not specified, it defaults to `Delete`. Possible values include `Delete` and `Deallocate`. Changing this forces a new resource to be created."
   default     = "Delete"
@@ -711,7 +711,7 @@ variable "tags" {
   default     = {}
 }
 
-variable "ultra_ssd_enabled" {
+variable "default_node_pool_ultra_ssd_enabled" {
   type        = bool
   description = "(Optional) Used to specify whether the Ultra SSD is enabled in the Default Node Pool. Defaults to false."
   default     = false
