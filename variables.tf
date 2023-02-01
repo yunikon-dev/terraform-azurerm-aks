@@ -588,7 +588,7 @@ variable "public_ssh_key" {
 variable "rbac_aad" {
   type        = bool
   description = "(Optional) Is Azure Active Directory ingration enabled?"
-  default     = true
+  default     = false
   nullable    = false
 }
 
@@ -638,7 +638,7 @@ variable "rbac_aad_tenant_id" {
 variable "role_based_access_control_enabled" {
   type        = bool
   description = "(Optional) Enable Role Based Access Control."
-  default     = true
+  default     = false
   nullable    = false
 }
 
