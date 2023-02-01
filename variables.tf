@@ -37,7 +37,7 @@ variable "default_node_pool_availability_zones" {
 variable "default_node_pool_enable_auto_scaling" {
   type        = bool
   description = "Enable auto scaling for the default node pool."
-  default     = true
+  default     = false
 }
 
 variable "default_node_pool_node_count" {
