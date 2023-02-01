@@ -205,7 +205,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     for_each = var.microsoft_defender_enabled ? ["microsoft_defender"] : []
 
     content {
-      log_analytics_workspace_id = local.log_analytics_workspace.id
+      log_analytics_workspace_id = var.log_analytics_workspace.id
     }
   }
 
@@ -237,7 +237,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     for_each = var.log_analytics_workspace_enabled ? ["oms_agent"] : []
 
     content {
-      log_analytics_workspace_id = local.log_analytics_workspace.id
+      log_analytics_workspace_id = var.log_analytics_workspace.id
     }
   }
 
@@ -280,7 +280,7 @@ resource "azurerm_kubernetes_cluster" "main" {
       error_message = "Enabling load_balancer_profile requires that `load_balancer_sku` be set to `standard`"
     }
     precondition {
-      condition     = local.automatic_channel_upgrade_check
+      condition     = var.automatic_channel_upgrade_check
       error_message = "Either disable automatic upgrades, or only specify up to the minor version when using `automatic_channel_upgrade=patch` or don't specify `kubernetes_version` at all when using `automatic_channel_upgrade=stable|rapid|node-image`. With automatic upgrades `orchestrator_version` must be set to `null`."
     }
     precondition {
@@ -291,7 +291,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 }
 
 resource "azurerm_log_analytics_workspace" "main" {
-  count = local.create_analytics_workspace ? 1 : 0
+  count = var.create_analytics_workspace ? 1 : 0
 
   location            = coalesce(var.location, data.azurerm_resource_group.main.location)
   name                = var.cluster_log_analytics_workspace_name == null ? "${var.prefix}-workspace" : var.cluster_log_analytics_workspace_name
@@ -307,13 +307,13 @@ locals {
 }
 
 resource "azurerm_log_analytics_solution" "main" {
-  count = local.create_analytics_solution ? 1 : 0
+  count = var.create_analytics_solution ? 1 : 0
 
   location              = coalesce(var.location, data.azurerm_resource_group.main.location)
   resource_group_name   = coalesce(var.log_analytics_workspace_resource_group_name, var.resource_group_name)
   solution_name         = "ContainerInsights"
-  workspace_name        = local.log_analytics_workspace.name
-  workspace_resource_id = local.log_analytics_workspace.id
+  workspace_name        = var.log_analytics_workspace.name
+  workspace_resource_id = var.log_analytics_workspace.id
   tags                  = var.tags
 
   plan {
