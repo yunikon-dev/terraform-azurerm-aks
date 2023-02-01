@@ -2,54 +2,26 @@ package test
 
 import (
 	"testing"
+
 	"github.com/gruntwork-io/terratest/modules/terraform"
-	"github.com/gruntwork-io/terratest/modules/test-structure"
+	"github.com/stretchr/testify/assert"
 )
 
-// An example of how to test the simple Terraform module in examples/terraform-basic-example using Terratest.
-func TestTerraformBasicExample(t *testing.T) {
-	t.Parallel()
-
-	fixtureFolder := "./fixture"
-
-	// At the end of the test, clean up any resources that were created
-	defer test_structure.RunTestStage(t, "teardown", func() {
-		terraformOptions := test_structure.LoadTerraformOptions(t, fixtureFolder)
-		terraform.Destroy(t, terraformOptions)
+func TestTerraformHelloWorldExample(t *testing.T) {
+	// Construct the terraform options with default retryable errors to handle the most common
+	// retryable errors in terraform testing.
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		// Set the path to the Terraform code that will be tested.
+		TerraformDir: "./fixture",
 	})
 
-	// Deploy the example
-	test_structure.RunTestStage(t, "setup", func() {
-		terraformOptions := configureTerraformOptions(t, fixtureFolder)
+	// Clean up resources with "terraform destroy" at the end of the test.
+	defer terraform.Destroy(t, terraformOptions)
 
-		// Save the options so later test stages can use them
-		test_structure.SaveTerraformOptions(t, fixtureFolder, terraformOptions)
+	// Run "terraform init" and "terraform apply". Fail the test if there are any errors.
+	terraform.InitAndApply(t, terraformOptions)
 
-		// This will init and apply the resources and fail the test if there are any errors
-		terraform.InitAndApply(t, terraformOptions)
-	})
-
-	// Check whether the length of output meets the requirement
-	test_structure.RunTestStage(t, "validate", func() {
-		terraformOptions := test_structure.LoadTerraformOptions(t, fixtureFolder)
-
-		// Test Terraform output
-		terraformAksName := terraform.Output(t, terraformOptions, "terraform-azurerm-aks.name")
-		if len(terraform-azurerm-aks_name) <= 0 {
-			t.Fatal("terraformAksName is empty.")
-		}
-	})
-}
-
-func configureTerraformOptions(t *testing.T, fixtureFolder string) *terraform.Options {
-
-	terraformOptions := &terraform.Options{
-		// The path to where our Terraform code is located
-		TerraformDir: fixtureFolder,
-
-		// Variables to pass to our Terraform code using -var options
-		Vars: map[string]interface{}{},
-	}
-
-	return terraformOptions
+	// Run `terraform output` to get the values of output variables and check they have the expected values.
+	output := terraform.Output(t, terraformOptions, "terraform-azurerm-aks-name")
+	assert.Equal(t, "Hello, World!", output)
 }
