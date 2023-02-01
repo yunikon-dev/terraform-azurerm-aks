@@ -33,12 +33,6 @@ variable "create_analytics_solution" {
   default     = false
 }
 
-variable "cluster_log_analytics_workspace_name" {
-  type        = string
-  description = "Name for the Log Analytics Workspace for Kubernetes."
-  default     = null
-}
-
 # Default Node Pool variables
 variable "default_node_pool_availability_zones" {
   type        = list(string)
