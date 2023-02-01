@@ -2,12 +2,11 @@ module github.com/yunikon-dev/terraform-azurerm-aks
 
 go 1.19
 
-go get github.com/yunikon-dev/terraform-azurerm-aks
-
 require (
 	github.com/Azure/terraform-module-test-helper v0.7.1
 	github.com/gruntwork-io/terratest v0.41.9
 	github.com/stretchr/testify v1.8.1
+	github.com/yunikon-dev/terraform-azurerm-aks
 )
 
 require (
