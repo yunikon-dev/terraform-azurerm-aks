@@ -1,5 +1,3 @@
- var.resource_group_name
-
 moved {
   from = module.ssh-key.tls_private_key.ssh
   to   = tls_private_key.ssh[0]
