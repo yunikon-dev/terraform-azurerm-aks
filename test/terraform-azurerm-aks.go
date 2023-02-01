@@ -34,9 +34,9 @@ func TestTerraformBasicExample(t *testing.T) {
 		terraformOptions := test_structure.LoadTerraformOptions(t, fixtureFolder)
 
 		// Test Terraform output
-		terraform-azurerm-aks-name := terraform.Output(t, terraformOptions, "terraform-azurerm-aks.name")
+		terraformAksName := terraform.Output(t, terraformOptions, "terraform-azurerm-aks.name")
 		if len(terraform-azurerm-aks_name) <= 0 {
-			t.Fatal("terraform-azurerm-aks-name is empty.")
+			t.Fatal("terraformAksName is empty.")
 		}
 	})
 }
