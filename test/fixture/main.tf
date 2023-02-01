@@ -15,7 +15,7 @@ resource "azurerm_subnet" "main" {
   name                 = "aks-subnet"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["172.7.93.0/24"]
+  address_prefixes     = ["172.0.1.0/24"]
 }
 
 module "terraform-azurerm-aks" {
