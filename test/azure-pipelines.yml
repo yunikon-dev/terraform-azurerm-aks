@@ -22,7 +22,7 @@ parameters:
 - name: workingDirectory
   displayName: "Working directory:"
   type: string
-  default: "./test/fixture"
+  default: "./test"
 
 # Edit the 'pool' key to use self-hosted agents
 # i.e: pool: MyFavoriteAgent
