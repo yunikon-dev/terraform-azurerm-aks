@@ -289,7 +289,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 resource "azurerm_log_analytics_workspace" "main" {
   count = var.create_analytics_workspace ? 1 : 0
 
-  location            = coalesce(var.location, data.azurerm_resource_group.main.location)
+  location            = coalesce(var.location, "westeurope")
   name                = var.cluster_log_analytics_workspace_name == null ? "${var.cluster_name}-workspace" : var.cluster_log_analytics_workspace_name
   resource_group_name = coalesce(var.log_analytics_workspace_resource_group_name, var.resource_group_name)
   retention_in_days   = var.log_retention_in_days
@@ -305,7 +305,7 @@ locals {
 resource "azurerm_log_analytics_solution" "main" {
   count = var.create_analytics_solution ? 1 : 0
 
-  location              = coalesce(var.location, data.azurerm_resource_group.main.location)
+  location              = coalesce(var.location, "westeurope")
   resource_group_name   = coalesce(var.log_analytics_workspace_resource_group_name, var.resource_group_name)
   solution_name         = "ContainerInsights"
   workspace_name        = var.log_analytics_workspace.name
