@@ -1,3 +1,5 @@
+module github.com/yunikon-dev/terraform-azurerm-aks
+
 go 1.18
 
 require github.com/gruntwork-io/terratest v0.40.8
