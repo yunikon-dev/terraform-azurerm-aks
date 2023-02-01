@@ -74,4 +74,5 @@ steps:
       echo "Authorizing to Azure Subscription $(az account show --query id | xargs) with Service Principal $servicePrincipalId"
 
       go mod init workaround
+      go mod tidy
       go test -v
