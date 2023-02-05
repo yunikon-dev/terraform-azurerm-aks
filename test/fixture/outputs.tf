@@ -5,6 +5,11 @@ output "kubernetes_cluster" {
   sensitive   = true
 }
 
+output "kubernetes_cluster_name" {
+  value       = module.terraform-azurerm-aks.kubernetes_cluster.name
+  description = "Module output to test."
+}
+
 output "log_analytics_workspace" {
   value = module.terraform-azurerm-aks.log_analytics_workspace
 }

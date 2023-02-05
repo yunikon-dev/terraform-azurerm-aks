@@ -22,6 +22,6 @@ func TestTerraformHelloWorldExample(t *testing.T) {
 	terraform.InitAndApply(t, terraformOptions)
 
 	// Run `terraform output` to get the values of output variables and check they have the expected values.
-	output := terraform.Output(t, terraformOptions, "kubernetes_cluster.name")
+	output := terraform.Output(t, terraformOptions, "kubernetes_cluster_name")
 	assert.Equal(t, "rudytestakscluster", output)
 }
