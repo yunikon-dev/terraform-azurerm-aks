@@ -2,7 +2,7 @@
 output "kubernetes_cluster" {
   value       = module.terraform-azurerm-aks.kubernetes_cluster
   description = "Module output to test."
-  sensitive = true
+  sensitive   = true
 }
 
 output "log_analytics_workspace" {
