@@ -6,7 +6,7 @@ output "kubernetes_cluster" {
 }
 
 output "kubernetes_cluster_name" {
-  value       = module.terraform-azurerm-aks.kubernetes_cluster.name
+  value       = module.terraform-azurerm-aks.cluster_name
   description = "Module output to test."
 }
 

@@ -5,6 +5,11 @@ output "kubernetes_cluster" {
   sensitive   = true
 }
 
+output "cluster_name" {
+  value       = azurerm_kubernetes_cluster.main.name
+  description = "Name of the Azure Kubernetes Service."
+}
+
 output "log_analytics_workspace" {
   value       = try(azurerm_log_analytics_workspace.main[0], null)
   description = ""
