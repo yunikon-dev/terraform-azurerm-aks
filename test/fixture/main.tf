@@ -19,11 +19,31 @@ resource "azurerm_subnet" "main" {
 }
 
 module "terraform-azurerm-aks" {
-  source = "github.com/yunikon-dev/terraform-azurerm-aks"
+  source = "../.."
 
   resource_group_name = azurerm_resource_group.main.name
-  cluster_name        = "testakscluster"
+  cluster_name        = "rudytestakscluster"
   location            = azurerm_resource_group.main.location
   dns_prefix          = "testjeaks"
-  default_node_pool_vnet_subnet_id = azurerm_subnet.main.id
+  create_container_registry = true
+
+  default_node_pool = {
+    vnet_subnet_id             = azurerm_subnet.main.id
+    enable_enable_auto_scaling = true
+  }
+  node_pools = {
+    "compute" = {
+      min_count           = 2
+      enable_auto_scaling = true
+    }
+  }
+
+  enable_azure_active_directory_role_based_access_control = true
+
+   azure_active_directory_role_based_access_control = {
+      managed   = true
+      azure_rbac_enabled     = true
+    }
+
+    azuread_groups = ["Testing", "Testing2"]
 }

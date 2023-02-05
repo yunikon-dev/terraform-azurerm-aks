@@ -1,18 +1,27 @@
-moved {
-  from = module.ssh-key.tls_private_key.ssh
-  to   = tls_private_key.ssh[0]
-}
-
 resource "tls_private_key" "ssh" {
-  count     = var.admin_username == null ? 0 : 1
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
+resource "azurerm_user_assigned_identity" "main" {
+  name                = "${var.cluster_name}-id"
+  location            = coalesce(var.location, "westeurope")
+  resource_group_name = var.resource_group_name
+  tags                = var.tags
+}
+
+data "azuread_group" "main" {
+  for_each = toset(var.azuread_groups)
+
+  display_name     = each.key
+  security_enabled = true
+}
+
 resource "azurerm_kubernetes_cluster" "main" {
-  location                            = coalesce(var.location, "westeurope")
   name                                = var.cluster_name
+  location                            = var.location
   resource_group_name                 = var.resource_group_name
+  node_resource_group                 = var.create_node_resource_group ? "${var.resource_group_name}-nodes" : coalesce(var.node_resource_group, null)
   api_server_authorized_ip_ranges     = var.api_server_authorized_ip_ranges
   automatic_channel_upgrade           = var.automatic_channel_upgrade
   azure_policy_enabled                = var.azure_policy_enabled
@@ -21,159 +30,116 @@ resource "azurerm_kubernetes_cluster" "main" {
   http_application_routing_enabled    = var.http_application_routing_enabled
   kubernetes_version                  = var.kubernetes_version
   local_account_disabled              = var.local_account_disabled
-  node_resource_group                 = var.node_resource_group
   oidc_issuer_enabled                 = var.oidc_issuer_enabled
   open_service_mesh_enabled           = var.open_service_mesh_enabled
   private_cluster_enabled             = var.private_cluster_enabled
   private_cluster_public_fqdn_enabled = var.private_cluster_public_fqdn_enabled
   private_dns_zone_id                 = var.private_dns_zone_id
-  role_based_access_control_enabled   = var.role_based_access_control_enabled
+  role_based_access_control_enabled   = var.azure_active_directory_role_based_access_control["azure_rbac_enabled"] ? true : coalesce(var.role_based_access_control_enabled, false)
   sku_tier                            = var.sku_tier
   tags                                = var.tags
-  workload_identity_enabled           = var.workload_identity_enabled
 
-  dynamic "default_node_pool" {
-    for_each = var.default_node_pool_enable_auto_scaling == true ? [] : ["manual_scaling"]
+  # Preview features
+  image_cleaner_enabled        = var.image_cleaner_enabled
+  image_cleaner_interval_hours = var.image_cleaner_enabled ? var.image_cleaner_interval_hours : null
+  workload_identity_enabled    = var.workload_identity_enabled
 
-    content {
-      name                         = var.default_node_pool_name
-      vm_size                      = var.default_node_pool_size
-      enable_auto_scaling          = var.default_node_pool_enable_auto_scaling
-      enable_host_encryption       = var.default_node_pool_enable_host_encryption
-      enable_node_public_ip        = var.default_node_pool_enable_node_public_ip
-      max_count                    = var.default_node_pool_max_count
-      max_pods                     = var.default_node_pool_max_pods
-      min_count                    = var.default_node_pool_min_count
-      node_count                   = var.default_node_pool_node_count
-      node_labels                  = var.default_node_pool_node_labels
-      only_critical_addons_enabled = var.default_node_pool_only_critical_addons_enabled
-      orchestrator_version         = var.default_node_pool_orchestrator_version
-      os_disk_size_gb              = var.default_node_pool_os_disk_size_gb
-      os_disk_type                 = var.default_node_pool_os_disk_type
-      pod_subnet_id                = var.default_node_pool_pod_subnet_id
-      scale_down_mode              = var.default_node_pool_scale_down_mode
-      tags                         = merge(var.tags, var.default_node_pool_tags)
-      type                         = "VirtualMachineScaleSets"
-      ultra_ssd_enabled            = var.default_node_pool_ultra_ssd_enabled
-      vnet_subnet_id               = var.default_node_pool_vnet_subnet_id
-      zones                        = var.default_node_pool_availability_zones
-    }
-  }
-  dynamic "default_node_pool" {
-    for_each = var.default_node_pool_enable_auto_scaling == true ? ["auto_scaling"] : []
-
-    content {
-      name                         = var.default_node_pool_name
-      vm_size                      = var.default_node_pool_size
-      enable_auto_scaling          = var.default_node_pool_enable_auto_scaling
-      enable_host_encryption       = var.default_node_pool_enable_host_encryption
-      enable_node_public_ip        = var.default_node_pool_enable_node_public_ip
-      max_count                    = var.default_node_pool_max_count
-      max_pods                     = var.default_node_pool_max_pods
-      min_count                    = var.default_node_pool_min_count
-      node_count                   = var.default_node_pool_node_count
-      node_labels                  = var.default_node_pool_node_labels
-      only_critical_addons_enabled = var.default_node_pool_only_critical_addons_enabled
-      orchestrator_version         = var.default_node_pool_orchestrator_version
-      os_disk_size_gb              = var.default_node_pool_os_disk_size_gb
-      os_disk_type                 = var.default_node_pool_os_disk_type
-      pod_subnet_id                = var.default_node_pool_pod_subnet_id
-      scale_down_mode              = var.default_node_pool_scale_down_mode
-      tags                         = merge(var.tags, var.default_node_pool_tags)
-      type                         = "VirtualMachineScaleSets"
-      ultra_ssd_enabled            = var.default_node_pool_ultra_ssd_enabled
-      vnet_subnet_id               = var.default_node_pool_vnet_subnet_id
-      zones                        = var.default_node_pool_availability_zones
-    }
+  default_node_pool {
+    name                         = var.default_node_pool["name"]
+    vm_size                      = var.default_node_pool["vm_size"]
+    enable_auto_scaling          = var.default_node_pool["enable_auto_scaling"]
+    enable_host_encryption       = var.default_node_pool["enable_host_encryption"]
+    enable_node_public_ip        = var.default_node_pool["enable_node_public_ip"]
+    node_count                   = var.default_node_pool["enable_auto_scaling"] ? null : coalesce(var.default_node_pool["node_count"], 1)
+    min_count                    = var.default_node_pool["enable_auto_scaling"] ? coalesce(var.default_node_pool["min_count"], 1) : null
+    max_count                    = var.default_node_pool["enable_auto_scaling"] ? coalesce(var.default_node_pool["max_count"], var.default_node_pool["min_count"] + 1) : null
+    max_pods                     = var.default_node_pool["max_pods"]
+    node_labels                  = var.default_node_pool["node_labels"]
+    node_taints                  = var.default_node_pool["node_taints"]
+    only_critical_addons_enabled = var.default_node_pool["only_critical_addons_enabled"]
+    orchestrator_version         = var.default_node_pool["orchestrator_version"]
+    os_disk_size_gb              = var.default_node_pool["os_disk_size_gb"]
+    os_disk_type                 = var.default_node_pool["os_disk_type"]
+    pod_subnet_id                = var.default_node_pool["pod_subnet_id"]
+    scale_down_mode              = var.default_node_pool["scale_down_mode"]
+    tags                         = merge(var.tags, var.default_node_pool["tags"])
+    type                         = "VirtualMachineScaleSets"
+    ultra_ssd_enabled            = var.default_node_pool["ultra_ssd_enabled"]
+    vnet_subnet_id               = var.default_node_pool["vnet_subnet_id"]
+    zones                        = var.default_node_pool["zones"]
   }
 
   dynamic "auto_scaler_profile" {
-    for_each = var.auto_scaler_profile_enabled ? ["default_auto_scaler_profile"] : []
-
+    for_each = var.default_node_pool["enable_auto_scaling"] || var.default_node_pool["enable_auto_scaling"] ? ["auto_scaler_profile"] : []
     content {
-      balance_similar_node_groups      = var.auto_scaler_profile_balance_similar_node_groups
-      empty_bulk_delete_max            = var.auto_scaler_profile_empty_bulk_delete_max
-      expander                         = var.auto_scaler_profile_expander
-      max_graceful_termination_sec     = var.auto_scaler_profile_max_graceful_termination_sec
-      max_node_provisioning_time       = var.auto_scaler_profile_max_node_provisioning_time
-      max_unready_nodes                = var.auto_scaler_profile_max_unready_nodes
-      max_unready_percentage           = var.auto_scaler_profile_max_unready_percentage
-      new_pod_scale_up_delay           = var.auto_scaler_profile_new_pod_scale_up_delay
-      scale_down_delay_after_add       = var.auto_scaler_profile_scale_down_delay_after_add
-      scale_down_delay_after_delete    = var.auto_scaler_profile_scale_down_delay_after_delete
-      scale_down_delay_after_failure   = var.auto_scaler_profile_scale_down_delay_after_failure
-      scale_down_unneeded              = var.auto_scaler_profile_scale_down_unneeded
-      scale_down_unready               = var.auto_scaler_profile_scale_down_unready
-      scale_down_utilization_threshold = var.auto_scaler_profile_scale_down_utilization_threshold
-      scan_interval                    = var.auto_scaler_profile_scan_interval
-      skip_nodes_with_local_storage    = var.auto_scaler_profile_skip_nodes_with_local_storage
-      skip_nodes_with_system_pods      = var.auto_scaler_profile_skip_nodes_with_system_pods
+      balance_similar_node_groups      = var.auto_scaler_profile["balance_similar_node_groups"]
+      empty_bulk_delete_max            = var.auto_scaler_profile["empty_bulk_delete_max"]
+      expander                         = var.auto_scaler_profile["expander"]
+      max_graceful_termination_sec     = var.auto_scaler_profile["max_graceful_termination_sec"]
+      max_node_provisioning_time       = var.auto_scaler_profile["max_node_provisioning_time"]
+      max_unready_nodes                = var.auto_scaler_profile["max_unready_nodes"]
+      max_unready_percentage           = var.auto_scaler_profile["max_unready_percentage"]
+      new_pod_scale_up_delay           = var.auto_scaler_profile["new_pod_scale_up_delay"]
+      scale_down_delay_after_add       = var.auto_scaler_profile["scale_down_delay_after_add"]
+      scale_down_delay_after_delete    = var.auto_scaler_profile["scale_down_delay_after_delete"]
+      scale_down_delay_after_failure   = var.auto_scaler_profile["scale_down_delay_after_failure"]
+      scale_down_unneeded              = var.auto_scaler_profile["scale_down_unneeded"]
+      scale_down_unready               = var.auto_scaler_profile["scale_down_unready"]
+      scale_down_utilization_threshold = var.auto_scaler_profile["scale_down_utilization_threshold"]
+      scan_interval                    = var.auto_scaler_profile["scan_interval"]
+      skip_nodes_with_local_storage    = var.auto_scaler_profile["skip_nodes_with_local_storage"]
+      skip_nodes_with_system_pods      = var.auto_scaler_profile["skip_nodes_with_system_pods"]
     }
   }
 
   dynamic "azure_active_directory_role_based_access_control" {
-    for_each = var.role_based_access_control_enabled && var.rbac_aad && var.rbac_aad_managed ? ["rbac"] : []
+    for_each = var.enable_azure_active_directory_role_based_access_control ? ["azure_active_directory_role_based_access_control"] : []
 
     content {
-      admin_group_object_ids = var.rbac_aad_admin_group_object_ids
-      azure_rbac_enabled     = var.rbac_aad_azure_rbac_enabled
-      managed                = true
-      tenant_id              = var.rbac_aad_tenant_id
+      managed   = var.azure_active_directory_role_based_access_control["managed"]
+      tenant_id = var.azure_active_directory_role_based_access_control["tenant_id"]
+      # If managed is set to `true`
+      admin_group_object_ids = var.azure_active_directory_role_based_access_control["managed"] ? [for group in data.azuread_group.main : group.object_id] : null
+      azure_rbac_enabled     = var.azure_active_directory_role_based_access_control["managed"] ? var.azure_active_directory_role_based_access_control["azure_rbac_enabled"] : null
+      # If managed is set to `false`
+      client_app_id     = !var.azure_active_directory_role_based_access_control["managed"] ? var.azure_active_directory_role_based_access_control["client_app_id"] : null
+      server_app_id     = !var.azure_active_directory_role_based_access_control["managed"] ? var.azure_active_directory_role_based_access_control["server_app_id"] : null
+      server_app_secret = !var.azure_active_directory_role_based_access_control["managed"] ? var.azure_active_directory_role_based_access_control["server_app_secret"] : null
     }
   }
 
-  dynamic "azure_active_directory_role_based_access_control" {
-    for_each = var.role_based_access_control_enabled && var.rbac_aad && !var.rbac_aad_managed ? ["rbac"] : []
-
-    content {
-      client_app_id     = var.rbac_aad_client_app_id
-      managed           = false
-      server_app_id     = var.rbac_aad_server_app_id
-      server_app_secret = var.rbac_aad_server_app_secret
-      tenant_id         = var.rbac_aad_tenant_id
-    }
-  }
-
-  dynamic "identity" {
-    for_each = var.client_id == "" || var.client_secret == "" ? ["identity"] : []
-
-    content {
-      type         = var.identity_type
-      identity_ids = var.identity_ids
-    }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = concat(var.identity_ids, [azurerm_user_assigned_identity.main.id])
   }
 
   dynamic "ingress_application_gateway" {
-    for_each = var.ingress_application_gateway_enabled ? ["ingress_application_gateway"] : []
+    for_each = var.enable_ingress_application_gateway ? ["ingress_application_gateway"] : []
 
     content {
-      gateway_id   = var.ingress_application_gateway_id
-      gateway_name = var.ingress_application_gateway_name
-      subnet_cidr  = var.ingress_application_gateway_subnet_cidr
-      subnet_id    = var.ingress_application_gateway_subnet_id
+      gateway_id   = var.ingress_application_gateway["gateway_id"]
+      gateway_name = var.ingress_application_gateway["gateway_name"]
+      subnet_cidr  = var.ingress_application_gateway["subnet_cidr"]
+      subnet_id    = var.ingress_application_gateway["subnet_id"]
     }
   }
 
   dynamic "key_vault_secrets_provider" {
-    for_each = var.key_vault_secrets_provider_enabled ? ["key_vault_secrets_provider"] : []
+    for_each = var.enable_key_vault_secrets_provider ? ["key_vault_secrets_provider"] : []
 
     content {
-      secret_rotation_enabled  = var.secret_rotation_enabled
-      secret_rotation_interval = var.secret_rotation_interval
+      secret_rotation_enabled  = var.key_vault_secrets_provider["secret_rotation_enabled"]
+      secret_rotation_interval = var.key_vault_secrets_provider["secret_rotation_interval"]
     }
   }
 
-  dynamic "linux_profile" {
-    for_each = var.admin_username == null ? [] : ["linux_profile"]
-
-    content {
-      admin_username = var.admin_username
-
-      ssh_key {
-        key_data = replace(coalesce(var.public_ssh_key, tls_private_key.ssh[0].public_key_openssh), "\n", "")
-      }
+  linux_profile {
+    admin_username = var.linux_profile["admin_username"]
+    ssh_key {
+      key_data = var.linux_profile["admin_username"] != null ? replace(coalesce(var.linux_profile["key_data"], tls_private_key.ssh.public_key_openssh), "\n", "") : null
     }
   }
+
   dynamic "maintenance_window" {
     for_each = var.maintenance_window != null ? ["maintenance_window"] : []
 
@@ -197,123 +163,170 @@ resource "azurerm_kubernetes_cluster" "main" {
       }
     }
   }
+
   dynamic "microsoft_defender" {
-    for_each = var.microsoft_defender_enabled ? ["microsoft_defender"] : []
+    for_each = var.enable_microsoft_defender ? ["microsoft_defender"] : []
+    content {
+      log_analytics_workspace_id = try(azurerm_log_analytics_workspace.main[0].id, null)
+    }
+  }
+
+  # Preview feature
+  dynamic "workload_autoscaler_profile" {
+    for_each = var.enable_workload_autoscaler_profile ? ["workload_autoscaler_profile"] : []
 
     content {
-      log_analytics_workspace_id = var.log_analytics_workspace.id
+      keda_enabled = var.workload_autoscaler_profile["keda_enabled"]
     }
   }
 
   network_profile {
-    network_plugin     = var.network_plugin
-    dns_service_ip     = var.net_profile_dns_service_ip
-    docker_bridge_cidr = var.net_profile_docker_bridge_cidr
-    load_balancer_sku  = var.load_balancer_sku
-    network_policy     = var.network_policy
-    outbound_type      = var.net_profile_outbound_type
-    pod_cidr           = var.net_profile_pod_cidr
-    service_cidr       = var.net_profile_service_cidr
+    network_plugin     = var.network_profile["network_plugin"]
+    dns_service_ip     = var.network_profile["dns_service_ip"]
+    docker_bridge_cidr = var.network_profile["docker_bridge_cidr"]
+    load_balancer_sku  = var.network_profile["load_balancer_sku"]
+    network_policy     = var.network_profile["network_policy"]
+    outbound_type      = var.network_profile["outbound_type"]
+    pod_cidr           = var.network_profile["pod_cidr"]
+    service_cidr       = var.network_profile["service_cidr"]
 
-    dynamic "load_balancer_profile" {
-      for_each = var.load_balancer_profile_enabled && var.load_balancer_sku == "standard" ? ["load_balancer_profile"] : []
-
-      content {
-        idle_timeout_in_minutes     = var.load_balancer_profile_idle_timeout_in_minutes
-        managed_outbound_ip_count   = var.load_balancer_profile_managed_outbound_ip_count
-        managed_outbound_ipv6_count = var.load_balancer_profile_managed_outbound_ipv6_count
-        outbound_ip_address_ids     = var.load_balancer_profile_outbound_ip_address_ids
-        outbound_ip_prefix_ids      = var.load_balancer_profile_outbound_ip_prefix_ids
-        outbound_ports_allocated    = var.load_balancer_profile_outbound_ports_allocated
-      }
+    load_balancer_profile {
+      idle_timeout_in_minutes     = var.load_balancer_profile["idle_timeout_in_minutes"]
+      managed_outbound_ip_count   = var.load_balancer_profile["managed_outbound_ip_count"]
+      managed_outbound_ipv6_count = var.load_balancer_profile["managed_outbound_ipv6_count"]
+      outbound_ip_address_ids     = var.load_balancer_profile["outbound_ip_address_ids"]
+      outbound_ip_prefix_ids      = var.load_balancer_profile["outbound_ip_prefix_ids"]
+      outbound_ports_allocated    = var.load_balancer_profile["outbound_ports_allocated"]
     }
   }
 
   dynamic "oms_agent" {
-    for_each = var.log_analytics_workspace_enabled ? ["oms_agent"] : []
+    for_each = var.enable_oms_agent ? ["oms_agent"] : []
 
     content {
-      log_analytics_workspace_id = var.log_analytics_workspace.id
+      log_analytics_workspace_id = try(azurerm_log_analytics_workspace.main[0].id, null)
     }
   }
 
-  dynamic "service_principal" {
-    for_each = var.client_id != "" && var.client_secret != "" ? ["service_principal"] : []
-
-    content {
-      client_id     = var.client_id
-      client_secret = var.client_secret
-    }
-  }
-
-  dynamic "storage_profile" {
-    for_each = var.storage_profile_enabled ? ["storage_profile"] : []
-
-    content {
-      blob_driver_enabled         = var.storage_profile_blob_driver_enabled
-      disk_driver_enabled         = var.storage_profile_disk_driver_enabled
-      disk_driver_version         = var.storage_profile_disk_driver_version
-      file_driver_enabled         = var.storage_profile_file_driver_enabled
-      snapshot_controller_enabled = var.storage_profile_snapshot_controller_enabled
-    }
+  storage_profile {
+    blob_driver_enabled         = var.storage_profile["blob_driver_enabled"]
+    disk_driver_enabled         = var.storage_profile["disk_driver_enabled"]
+    disk_driver_version         = var.storage_profile["disk_driver_version"]
+    file_driver_enabled         = var.storage_profile["file_driver_enabled"]
+    snapshot_controller_enabled = var.storage_profile["snapshot_controller_enabled"]
   }
 
   lifecycle {
+    ignore_changes = [
+      tags,
+      default_node_pool[0].node_count
+    ]
+
     precondition {
-      condition     = (var.client_id != "" && var.client_secret != "") || (var.identity_type != "")
-      error_message = "Either `client_id` and `client_secret` or `identity_type` must be set."
+      condition     = (var.identity_type == "SystemAssigned") || (var.identity_ids == null ? false : length(var.identity_ids) > 0)
+      error_message = "When identity_type `UserAssigned` or `SystemAssigned, UserAssigned` is set, `identity_ids` must be set as well."
     }
     precondition {
-      condition     = (var.client_id != "" && var.client_secret != "") || (var.identity_type == "SystemAssigned") || (var.identity_ids == null ? false : length(var.identity_ids) > 0)
-      error_message = "If use identity and `UserAssigned` or `SystemAssigned, UserAssigned` is set, an `identity_ids` must be set as well."
+      condition     = !(var.enable_microsoft_defender && !var.create_log_analytics_workspace)
+      error_message = "Enabling Microsoft Defender requires that `var.create_log_analytics_workspace` be set to true."
     }
     precondition {
-      condition     = !(var.microsoft_defender_enabled && !var.log_analytics_workspace_enabled)
-      error_message = "Enabling Microsoft Defender requires that `log_analytics_workspace_enabled` be set to true."
-    }
-    precondition {
-      condition     = !(var.load_balancer_profile_enabled && var.load_balancer_sku != "standard")
-      error_message = "Enabling load_balancer_profile requires that `load_balancer_sku` be set to `standard`"
+      condition     = !(var.azure_active_directory_role_based_access_control["azure_rbac_enabled"] && !var.role_based_access_control_enabled)
+      error_message = "To enable Azure RBAC on the Kubernetes Cluster`, also set `var.role_based_access_control_enabled` to `true`."
     }
     precondition {
       condition     = var.automatic_channel_upgrade != ""
       error_message = "Either disable automatic upgrades, or only specify up to the minor version when using `automatic_channel_upgrade=patch` or don't specify `kubernetes_version` at all when using `automatic_channel_upgrade=stable|rapid|node-image`. With automatic upgrades `orchestrator_version` must be set to `null`."
     }
     precondition {
-      condition     = var.role_based_access_control_enabled || !var.rbac_aad
-      error_message = "Enabling Azure Active Directory integration requires that `role_based_access_control_enabled` be set to true."
+      condition     = !(var.workload_identity_enabled && !var.enable_preview_features)
+      error_message = "Workload Identity is a Preview feature. To enable Preview features, please set `enable_preview_features` to `true`. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
+    }
+    precondition {
+      condition     = !(!var.oidc_issuer_enabled && var.workload_identity_enabled && !var.enable_preview_features)
+      error_message = "To enable the Preview feature Workload Identity, `oidc_issuer_enabled` must also be set to `true`."
+    }
+    precondition {
+      condition     = !(var.image_cleaner_enabled && !var.enable_preview_features)
+      error_message = "Image Cleaner is a Preview feature. To enable Preview features, please set `enable_preview_features` to `true`. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
     }
   }
 }
 
 resource "azurerm_log_analytics_workspace" "main" {
-  count = var.create_analytics_workspace ? 1 : 0
+  count = var.create_log_analytics_workspace ? 1 : 0
 
-  location            = coalesce(var.location, "westeurope")
-  name                = var.cluster_log_analytics_workspace_name == null ? "${var.cluster_name}-workspace" : var.cluster_log_analytics_workspace_name
-  resource_group_name = coalesce(var.log_analytics_workspace_resource_group_name, var.resource_group_name)
-  retention_in_days   = var.log_retention_in_days
-  sku                 = var.log_analytics_workspace_sku
-  tags                = var.tags
-}
-
-locals {
-  azurerm_log_analytics_workspace_id   = try(azurerm_log_analytics_workspace.main[0].id, null)
-  azurerm_log_analytics_workspace_name = try(azurerm_log_analytics_workspace.main[0].name, null)
+  location            = coalesce(var.log_analytics_workspace["location"], var.location)
+  name                = var.log_analytics_workspace["name"] == null ? "${var.cluster_name}-workspace" : var.log_analytics_workspace["name"]
+  resource_group_name = coalesce(var.log_analytics_workspace["resource_group_name"], var.resource_group_name)
+  retention_in_days   = var.log_analytics_workspace["retention_in_days"]
+  sku                 = var.log_analytics_workspace["sku"]
+  tags                = merge(var.log_analytics_workspace["tags"], var.tags)
 }
 
 resource "azurerm_log_analytics_solution" "main" {
-  count = var.create_analytics_solution ? 1 : 0
+  count = var.create_log_analytics_solution ? 1 : 0
 
-  location              = coalesce(var.location, "westeurope")
-  resource_group_name   = coalesce(var.log_analytics_workspace_resource_group_name, var.resource_group_name)
+  location              = coalesce(var.log_analytics_solution["location"], var.location)
+  resource_group_name   = try(azurerm_log_analytics_workspace.main[0].resource_group_name, var.log_analytics_solution["resource_group_name"], var.resource_group_name)
   solution_name         = "ContainerInsights"
-  workspace_name        = var.log_analytics_workspace.name
-  workspace_resource_id = var.log_analytics_workspace.id
-  tags                  = var.tags
+  workspace_name        = try(azurerm_log_analytics_workspace.main[0].name, null)
+  workspace_resource_id = try(azurerm_log_analytics_workspace.main[0].id, null)
+  tags                  = merge(var.log_analytics_solution["tags"], var.tags)
 
   plan {
     product   = "OMSGallery/ContainerInsights"
     publisher = "Microsoft"
   }
+}
+
+resource "azurerm_kubernetes_cluster_node_pool" "main" {
+  for_each = var.node_pools
+
+  name                   = each.key
+  kubernetes_cluster_id  = azurerm_kubernetes_cluster.main.id
+  vm_size                = each.value.vm_size
+  enable_auto_scaling    = each.value.enable_auto_scaling
+  enable_host_encryption = each.value.enable_host_encryption
+  enable_node_public_ip  = each.value.enable_node_public_ip
+  max_pods               = each.value.max_pods
+  node_count             = each.value.enable_auto_scaling ? null : coalesce(each.value.node_count, 1)
+  min_count              = each.value.enable_auto_scaling ? coalesce(each.value.min_count, 1) : null
+  max_count              = each.value.enable_auto_scaling ? coalesce(each.value.max_count, each.value.min_count + 1) : null
+  node_labels            = each.value.node_labels
+  orchestrator_version   = each.value.orchestrator_version
+  os_disk_size_gb        = each.value.os_disk_size_gb
+  os_disk_type           = each.value.os_disk_type
+  pod_subnet_id          = each.value.pod_subnet_id
+  scale_down_mode        = each.value.scale_down_mode
+  ultra_ssd_enabled      = each.value.ultra_ssd_enabled
+  vnet_subnet_id         = var.default_node_pool["vnet_subnet_id"]
+  zones                  = coalesce(each.value.zones, var.default_node_pool["zones"])
+  tags                   = merge(var.tags, each.value.tags)
+
+  lifecycle {
+    ignore_changes = [
+      tags,
+      node_count
+    ]
+  }
+}
+
+resource "azurerm_container_registry" "main" {
+  count = var.create_container_registry ? 1 : 0
+
+  name                = coalesce(var.container_registry["name"], replace("${var.cluster_name}acr", "[^a-zA-Z0-9]+", ""))
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  sku                 = var.container_registry["sku"]
+  tags                = merge(var.tags, var.container_registry["tags"])
+}
+
+resource "azurerm_role_assignment" "acr" {
+  count = var.create_container_registry ? 1 : 0
+
+  principal_id                     = azurerm_user_assigned_identity.main.principal_id
+  role_definition_name             = "AcrPull"
+  scope                            = azurerm_container_registry.main[0].id
+  skip_service_principal_aad_check = true
 }

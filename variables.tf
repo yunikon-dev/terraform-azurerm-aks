@@ -27,215 +27,295 @@ variable "create_analytics_solution" {
   default     = false
 }
 
-# Default Node Pool variables
-variable "default_node_pool_availability_zones" {
-  type        = list(string)
-  description = "(Optional) A list of Availability Zones across which the Node Pool should be spread. Changing this forces a new resource to be created."
-  default     = [1, 2, 3]
+variable "role_based_access_control_enabled" {
+  type    = bool
+  default = true
 }
 
-variable "default_node_pool_enable_auto_scaling" {
-  type        = bool
-  description = "Enable auto scaling for the default node pool."
-  default     = false
+# New Default Node Pool variables
+variable "node_pools" {
+  type = map(object({
+    vm_size                      = optional(string, "Standard_F4s")
+    enable_auto_scaling          = optional(bool, true)
+    enable_host_encryption       = optional(bool)
+    enable_node_public_ip        = optional(string)
+    max_count                    = optional(number)
+    max_pods                     = optional(number, 110)
+    min_count                    = optional(number)
+    node_count                   = optional(number)
+    node_labels                  = optional(map(string))
+    node_taints                  = optional(list(string), [])
+    only_critical_addons_enabled = optional(bool)
+    orchestrator_version         = optional(string)
+    os_disk_size_gb              = optional(number)
+    os_disk_type                 = optional(string)
+    pod_subnet_id                = optional(string)
+    scale_down_mode              = optional(string)
+    tags                         = optional(map(string), null)
+    type                         = optional(string)
+    ultra_ssd_enabled            = optional(bool)
+    vnet_subnet_id               = optional(string)
+    zones                        = optional(list(number))
+  }))
+  description = "Node pools"
 }
 
-variable "default_node_pool_node_count" {
-  type        = number
-  description = "The number of nodes that should exist in the Node Pool. Please set `node_count` to `null` while `enable_auto_scaling` is `true` to avoid possible `node_count` changes."
-  default     = 1
+variable "default_node_pool" {
+  type = object({
+    name                         = optional(string, "default")
+    vm_size                      = optional(string, "Standard_B2s")
+    enable_auto_scaling          = optional(bool, true)
+    enable_host_encryption       = optional(bool)
+    enable_node_public_ip        = optional(string)
+    max_count                    = optional(number)
+    max_pods                     = optional(number, 110)
+    min_count                    = optional(number, 1)
+    node_count                   = optional(number, 1)
+    node_labels                  = optional(map(string))
+    node_taints                  = optional(list(string), null)
+    only_critical_addons_enabled = optional(bool)
+    orchestrator_version         = optional(string)
+    os_disk_size_gb              = optional(number)
+    os_disk_type                 = optional(string)
+    pod_subnet_id                = optional(string)
+    scale_down_mode              = optional(string)
+    tags                         = optional(map(string), null)
+    type                         = optional(string, "VirtualMachineScaleSets")
+    ultra_ssd_enabled            = optional(bool)
+    vnet_subnet_id               = optional(string)
+    zones                        = optional(list(number), [1, 2, 3])
+  })
+  description = "Default Node Pool variables"
 }
 
-variable "default_node_pool_node_labels" {
-  type        = map(string)
-  description = "(Optional) A map of Kubernetes labels which should be applied to nodes in the Default Node Pool. Changing this forces a new resource to be created."
-  default     = {}
-}
-
-variable "default_node_pool_max_count" {
-  type        = number
-  description = "(Optional) The maximum number of nodes in the default node pool."
-  default     = null
-}
-
-variable "default_node_pool_max_pods" {
-  type        = number
-  description = "(Optional) The maximum number of pods that can run on each node. Changing this forces a new node pool to be created manually."
-  default     = 110
-}
-
-variable "default_node_pool_min_count" {
-  type        = number
-  description = "(Optional) Minimum number of nodes in the default node pool."
-  default     = null
-}
-
-variable "default_node_pool_name" {
-  type        = string
-  description = "The default node pool name."
-  default     = "default"
-  nullable    = false
-}
-
-variable "default_node_pool_size" {
-  type        = string
-  description = "The default Virtual Machine Scale Set size for the default node pool."
-  default     = "Standard_F4s_v2"
-}
-
-variable "default_node_pool_tags" {
-  type        = map(string)
-  description = "(Optional) A map of tags to assign to the default node pool."
-  default     = {}
-}
-
-variable "default_node_pool_orchestrator_version" {
-  type        = string
-  description = "Specify which Kubernetes release to use for the orchestration layer. The default used is the latest Kubernetes version available in the region"
-  default     = null
-}
-
-variable "default_node_pool_os_disk_size_gb" {
-  type        = number
-  description = "Disk size of nodes in GBs."
-  default     = 40
-}
-
-variable "default_node_pool_os_disk_type" {
-  type        = string
-  description = "The type of disk which should be used for the Operating System. Possible values are `Ephemeral` and `Managed`. Defaults to `Managed`. Changing this forces a new resource to be created."
-  default     = "Managed"
-  nullable    = false
-}
-
-variable "default_node_pool_pod_subnet_id" {
-  type        = string
-  description = "(Optional) The ID of the Subnet where the pods in the default node pool should exist. Changing this forces a new resource to be created."
-  default     = null
-}
-
-###
 variable "api_server_authorized_ip_ranges" {
   type        = set(string)
   description = "(Optional) The IP ranges to allow for incoming traffic to the server nodes."
   default     = null
 }
 
-# Auto Scaler Profile settings
-variable "auto_scaler_profile_balance_similar_node_groups" {
-  description = "(Optional) Detect similar node groups and balance the number of nodes between them. Defaults to `false`."
-  type        = bool
-  default     = false
+variable "auto_scaler_profile" {
+  type = object({
+    balance_similar_node_groups      = optional(bool)
+    empty_bulk_delete_max            = optional(number)
+    expander                         = optional(string)
+    max_graceful_termination_sec     = optional(number)
+    max_node_provisioning_time       = optional(string)
+    max_unready_nodes                = optional(number)
+    max_unready_percentage           = optional(number)
+    new_pod_scale_up_delay           = optional(string)
+    scale_down_delay_after_add       = optional(string)
+    scale_down_delay_after_delete    = optional(string)
+    scale_down_delay_after_failure   = optional(string)
+    scale_down_unneeded              = optional(string)
+    scale_down_unready               = optional(string)
+    scale_down_utilization_threshold = optional(string)
+    scan_interval                    = optional(string)
+    skip_nodes_with_local_storage    = optional(bool)
+    skip_nodes_with_system_pods      = optional(bool)
+  })
+  default = {
+    balance_similar_node_groups      = null
+    empty_bulk_delete_max            = null
+    expander                         = null
+    max_graceful_termination_sec     = null
+    max_node_provisioning_time       = null
+    max_unready_nodes                = null
+    max_unready_percentage           = null
+    new_pod_scale_up_delay           = null
+    scale_down_delay_after_add       = null
+    scale_down_delay_after_delete    = null
+    scale_down_delay_after_failure   = null
+    scale_down_unneeded              = null
+    scale_down_unready               = null
+    scale_down_utilization_threshold = null
+    scan_interval                    = null
+    skip_nodes_with_local_storage    = null
+    skip_nodes_with_system_pods      = null
+  }
+  description = "List of auto scaler profiles."
 }
 
-variable "auto_scaler_profile_empty_bulk_delete_max" {
-  description = "Maximum number of empty nodes that can be deleted at the same time. Defaults to `10`."
-  type        = number
-  default     = 10
+variable "load_balancer_profile" {
+  type = object({
+    idle_timeout_in_minutes     = optional(number)
+    managed_outbound_ip_count   = optional(number)
+    managed_outbound_ipv6_count = optional(number)
+    outbound_ip_address_ids     = optional(list(string))
+    outbound_ip_prefix_ids      = optional(list(string))
+    outbound_ports_allocated    = optional(number)
+  })
+  default = {
+    idle_timeout_in_minutes     = null
+    managed_outbound_ip_count   = null
+    managed_outbound_ipv6_count = null
+    outbound_ip_address_ids     = null
+    outbound_ip_prefix_ids      = null
+    outbound_ports_allocated    = null
+  }
 }
 
-variable "auto_scaler_profile_enabled" {
+variable "network_profile" {
+  type = object({
+    network_plugin     = optional(string, "azure")
+    dns_service_ip     = optional(string)
+    docker_bridge_cidr = optional(string)
+    load_balancer_sku  = optional(string)
+    network_policy     = optional(string)
+    outbound_type      = optional(string)
+    pod_cidr           = optional(string)
+    service_cidr       = optional(string)
+  })
+  default = {
+    network_plugin     = "azure"
+    dns_service_ip     = null
+    docker_bridge_cidr = null
+    load_balancer_sku  = null
+    network_plugin     = null
+    network_policy     = null
+    outbound_type      = null
+    pod_cidr           = null
+    service_cidr       = null
+  }
+}
+
+variable "storage_profile" {
+  type = object({
+    blob_driver_enabled         = bool
+    disk_driver_enabled         = bool
+    disk_driver_version         = string
+    file_driver_enabled         = bool
+    snapshot_controller_enabled = bool
+  })
+  default = {
+    blob_driver_enabled         = true
+    disk_driver_enabled         = true
+    disk_driver_version         = "v1"
+    file_driver_enabled         = true
+    snapshot_controller_enabled = true
+  }
+}
+
+variable "enable_azure_active_directory_role_based_access_control" {
+  type    = bool
+  default = false
+}
+
+variable "azure_active_directory_role_based_access_control" {
+  type = object({
+    managed                = optional(bool)
+    tenant_id              = optional(string)
+    admin_group_object_ids = optional(list(string))
+    azure_rbac_enabled     = optional(bool)
+    client_app_id          = optional(string)
+    server_app_id          = optional(string)
+    server_app_secret      = optional(string)
+  })
+  default = {
+    admin_group_object_ids = null
+    azure_rbac_enabled     = null
+    client_app_id          = null
+    managed                = null
+    server_app_id          = null
+    server_app_secret      = null
+    tenant_id              = null
+  }
+}
+
+variable "enable_ingress_application_gateway" {
   type        = bool
-  description = "Enable configuring the auto-scaler profile."
+  description = "Whether to deploy an Application Gateway Ingress Controller to this AKS Cluster."
   default     = false
   nullable    = false
 }
 
-variable "auto_scaler_profile_expander" {
-  description = "Expander to use. Possible values are `least-waste`, `priority`, `most-pods` and `random`. Defaults to `random`."
-  type        = string
-  default     = "random"
-  validation {
-    condition     = contains(["least-waste", "most-pods", "priority", "random"], var.auto_scaler_profile_expander)
-    error_message = "Must be either `least-waste`, `most-pods`, `priority` or `random`."
+variable "ingress_application_gateway" {
+  type = object({
+    gateway_id   = optional(string)
+    gateway_name = optional(string)
+    subnet_cidr  = optional(string)
+    subnet_id    = optional(string)
+  })
+  default = {
+    gateway_id   = null
+    gateway_name = null
+    subnet_cidr  = null
+    subnet_id    = null
   }
 }
 
-variable "auto_scaler_profile_max_graceful_termination_sec" {
-  description = "Maximum number of seconds the cluster autoscaler waits for pod termination when trying to scale down a node. Defaults to `600`."
-  type        = number
-  default     = 600
+variable "enable_key_vault_secrets_provider" {
+  type    = bool
+  default = true
 }
 
-variable "auto_scaler_profile_max_node_provisioning_time" {
-  description = "Maximum time the autoscaler waits for a node to be provisioned. Defaults to `15m`."
-  type        = string
-  default     = "15m"
+variable "key_vault_secrets_provider" {
+  type = object({
+    secret_rotation_enabled  = optional(bool)
+    secret_rotation_interval = optional(string)
+  })
+  default = {
+    secret_rotation_enabled  = true
+    secret_rotation_interval = "5m"
+  }
 }
 
-variable "auto_scaler_profile_max_unready_nodes" {
-  description = "Maximum Number of allowed unready nodes. Defaults to `3`."
-  type        = number
-  default     = 3
+variable "linux_profile" {
+  type = object({
+    admin_username = optional(string)
+    key_data       = optional(string)
+  })
+  default = {
+    admin_username = "azureadmin"
+    key_data       = null
+  }
 }
 
-variable "auto_scaler_profile_max_unready_percentage" {
-  description = "Maximum percentage of unready nodes the cluster autoscaler will stop if the percentage is exceeded. Defaults to `45`."
-  type        = number
-  default     = 45
-}
-
-variable "auto_scaler_profile_new_pod_scale_up_delay" {
-  description = "For scenarios such as burst or batch scale, where you do not want the Cluster Autoscaler to act before the Kubernetes scheduler can schedule all the pods, you can tell the CA to ignore unscheduled pods before they reach a certain age. The default is 10s."
-  type        = string
-  default     = "10s"
-}
-
-variable "auto_scaler_profile_scale_down_delay_after_add" {
-  description = "How long after the scale up of AKS nodes the scale down evaluation resumes. Defaults to `10m`."
-  type        = string
-  default     = "10m"
-}
-
-variable "auto_scaler_profile_scale_down_delay_after_delete" {
-  description = "How long after node deletion that scale down evaluation resumes. Defaults to `10s`."
-  type        = string
-  default     = "10s"
-}
-
-variable "auto_scaler_profile_scale_down_delay_after_failure" {
-  description = "How long after scale down failure that scale down evaluation resumes. Defaults to `3m`."
-  type        = string
-  default     = "3m"
-}
-
-variable "auto_scaler_profile_scale_down_unneeded" {
-  description = "How long a node should be unneeded before it is eligible for scale down. Defaults to `10m`."
-  type        = string
-  default     = "10m"
-}
-
-variable "auto_scaler_profile_scale_down_unready" {
-  description = "How long an unready node should be unneeded before it is eligible for scale down. Defaults to `20m`."
-  type        = string
-  default     = "20m"
-}
-
-variable "auto_scaler_profile_scale_down_utilization_threshold" {
-  description = "Node utilization level, defined as sum of requested resources divided by capacity, below which a node can be considered for scale down. Defaults to `0.5`."
-  type        = string
-  default     = "0.5"
-}
-
-variable "auto_scaler_profile_scan_interval" {
-  description = "How often the AKS Cluster should be re-evaluated for scale up/down. Defaults to `10s`."
-  type        = string
-  default     = "10s"
-}
-
-variable "auto_scaler_profile_skip_nodes_with_local_storage" {
-  description = "If `true` cluster autoscaler will never delete nodes with pods with local storage, for example, EmptyDir or HostPath. Defaults to `true`."
+variable "create_log_analytics_workspace" {
   type        = bool
-  default     = true
+  default     = false
+  description = "value"
 }
 
-variable "auto_scaler_profile_skip_nodes_with_system_pods" {
-  description = "If `true` cluster autoscaler will never delete nodes with pods from kube-system (except for DaemonSet or mirror pods). Defaults to `true`."
+variable "log_analytics_workspace" {
+  type = object({
+    location            = optional(string, null)
+    name                = optional(string, null)
+    resource_group_name = optional(string, null)
+    retention_in_days   = optional(number, null)
+    sku                 = optional(string, null)
+    tags                = optional(map(string), null)
+  })
+  default = {
+    location            = null
+    name                = null
+    resource_group_name = null
+    retention_in_days   = null
+    sku                 = null
+    tags                = null
+  }
+  description = "value"
+}
+
+variable "create_log_analytics_solution" {
   type        = bool
-  default     = true
+  default     = false
+  description = "value"
 }
 
-###
+variable "log_analytics_solution" {
+  type = object({
+    location = optional(string, null)
+    tags     = optional(map(string), null)
+  })
+  default = {
+    location = null
+    tags     = null
+  }
+  description = "value"
+}
+
+#
 variable "automatic_channel_upgrade" {
   type        = string
   default     = null
@@ -254,26 +334,6 @@ variable "azure_policy_enabled" {
   default     = false
 }
 
-variable "client_id" {
-  type        = string
-  description = "(Optional) The Client ID (Application ID) for the Service Principal used for AKS deployment"
-  default     = ""
-  nullable    = false
-}
-
-variable "client_secret" {
-  type        = string
-  description = "(Optional) The Client Secret (password) for the Service Principal used for the AKS deployment"
-  default     = ""
-  nullable    = false
-}
-
-variable "cluster_log_analytics_workspace_name" {
-  type        = string
-  description = "(Optional) The name of the Analytics Workspace."
-  default     = null
-}
-
 variable "cluster_name" {
   type        = string
   description = "(Optional) The name for the Azure Kubernetes Service resources created in the specified Resource Group."
@@ -286,18 +346,6 @@ variable "disk_encryption_set_id" {
   default     = null
 }
 
-variable "default_node_pool_enable_host_encryption" {
-  type        = bool
-  description = "Enable Host Encryption for default node pool. Encryption at host feature [must be enabled on the Subscription](https://docs.microsoft.com/azure/virtual-machines/linux/disks-enable-host-based-encryption-cli)"
-  default     = false
-}
-
-variable "default_node_pool_enable_node_public_ip" {
-  type        = bool
-  description = "(Optional) Nodes in the default node pool will have a Public IP Address if this option is set to true. Defaults to `false`."
-  default     = false
-}
-
 variable "http_application_routing_enabled" {
   type        = bool
   description = "(Optional) Enable HTTP Application Routing Addon (forces recreation). This setting is not recommended for non-development clusters."
@@ -307,7 +355,7 @@ variable "http_application_routing_enabled" {
 variable "identity_ids" {
   type        = list(string)
   description = "(Optional) Specifies a list of User Assigned Managed Identity IDs to be assigned to this AKS Cluster."
-  default     = null
+  default     = []
 }
 
 variable "identity_type" {
@@ -321,102 +369,10 @@ variable "identity_type" {
   }
 }
 
-variable "ingress_application_gateway_enabled" {
-  type        = bool
-  description = "Whether to deploy an Application Gateway Ingress Controller to this AKS Cluster?"
-  default     = false
-  nullable    = false
-}
-
-variable "ingress_application_gateway_id" {
-  type        = string
-  description = "The ID of the Application Gateway to integrate with the Ingress Controller of this AKS Cluster."
-  default     = null
-}
-
-variable "ingress_application_gateway_name" {
-  type        = string
-  description = "The name of the Application Gateway to be used or created in the node pool Resource Group, which in turn will be integrated with the Ingress Controller of this AKS Cluster."
-  default     = null
-}
-
-variable "ingress_application_gateway_subnet_cidr" {
-  type        = string
-  description = "The subnet CIDR to be used to create an Application Gateway, which will be integrated with the Ingress Controller of this AKS Cluster."
-  default     = null
-}
-
-variable "ingress_application_gateway_subnet_id" {
-  type        = string
-  description = "The ID of the subnet on which to create an Application Gateway, which will be integrated with the Ingress Controller in an AKS Cluster."
-  default     = null
-}
-
-variable "key_vault_secrets_provider_enabled" {
-  type        = bool
-  description = "(Optional) Enables the use of the Azure Key Vault Provider for the Secrets Store CSI Driver in this AKS Cluster. For more information, see: [Use the Azure Key Vault Provider for Secrets Store CSI Driver in an AKS Cluster](https://docs.microsoft.com/en-us/azure/aks/csi-secrets-store-driver)."
-  default     = false
-  nullable    = false
-}
-
 variable "kubernetes_version" {
   type        = string
   description = "Specify which Kubernetes release to use. The default used is the latest Kubernetes version available in the region"
   default     = null
-}
-
-variable "load_balancer_profile_enabled" {
-  type        = bool
-  description = "(Optional) Enable a load_balancer_profile block. This can only be used when load_balancer_sku is set to `standard`."
-  default     = false
-  nullable    = false
-}
-
-variable "load_balancer_profile_idle_timeout_in_minutes" {
-  type        = number
-  description = "(Optional) Desired outbound flow idle timeout in minutes for the cluster load balancer. Must be between `4` and `120`. Defaults to `30`."
-  default     = 30
-}
-
-variable "load_balancer_profile_managed_outbound_ip_count" {
-  type        = number
-  description = "(Optional) Count of desired managed outbound IPs for the cluster load balancer. Must be between `1` and `100`."
-  default     = null
-}
-
-variable "load_balancer_profile_managed_outbound_ipv6_count" {
-  type        = number
-  description = "(Optional) The desired number of IPv6 outbound IPs created and managed by Azure for the cluster load balancer. Must be in the range of `1` to `100`. The default value is `0` for single-stack and `1` for dual-stack. Note: managed_outbound_ipv6_count requires dual-stack networking. To enable dual-stack networking the Preview Feature Microsoft.ContainerService/AKS-EnableDualStack needs to be enabled and the Resource Provider re-registered, [see the documentation for more information](https://learn.microsoft.com/en-us/azure/aks/configure-kubenet-dual-stack?tabs=azure-cli%2Ckubectl#register-the-aks-enabledualstack-preview-feature)."
-  default     = null
-}
-
-variable "load_balancer_profile_outbound_ip_address_ids" {
-  type        = set(string)
-  description = "(Optional) The ID of the Public IP Addresses which should be used for outbound communication for the cluster load balancer."
-  default     = null
-}
-
-variable "load_balancer_profile_outbound_ip_prefix_ids" {
-  type        = set(string)
-  description = "(Optional) The ID of the outbound Public IP Address Prefixes which should be used for the cluster load balancer."
-  default     = null
-}
-
-variable "load_balancer_profile_outbound_ports_allocated" {
-  type        = number
-  description = "(Optional) Number of desired SNAT port for each VM in the clusters load balancer. Must be between `0` and `64000` inclusive. Defaults to `0`"
-  default     = 0
-}
-
-variable "load_balancer_sku" {
-  type        = string
-  description = "(Optional) Specifies the SKU of the Load Balancer used for this AKS Cluster. Possible values are `basic` and `standard`. Defaults to `standard`. Changing this forces a new AKS Cluster to be created."
-  default     = "standard"
-
-  validation {
-    condition     = contains(["basic", "standard"], var.load_balancer_sku)
-    error_message = "Possible values are `basic` and `standard`."
-  }
 }
 
 variable "local_account_disabled" {
@@ -429,46 +385,6 @@ variable "location" {
   type        = string
   description = "Azure region of the AKS Cluster, if not defined, this setting will be inherited from the Resource Group."
   default     = null
-}
-
-variable "log_analytics_solution_id" {
-  type        = string
-  description = "(Optional) Existing `azurerm_log_analytics_solution` resource ID. Providing this ID disables creation of a new `azurerm_log_analytics_solution`."
-  default     = null
-}
-
-variable "log_analytics_workspace" {
-  type = object({
-    id   = string
-    name = string
-  })
-  description = "(Optional) Existing `azurerm_log_analytics_workspace` to attach to the `azurerm_log_analytics_solution`. Providing this configuration disables creation of a new `azurerm_log_analytics_workspace`."
-  default     = null
-}
-
-variable "log_analytics_workspace_enabled" {
-  type        = bool
-  description = "(Optional) Enables the integration of `azurerm_log_analytics_workspace` and `azurerm_log_analytics_solution`. See [Enable Container insights](https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard) for more information."
-  default     = false
-  nullable    = false
-}
-
-variable "log_analytics_workspace_resource_group_name" {
-  type        = string
-  description = "(Optional) Resource Group name to create the `azurerm_log_analytics_solution` in."
-  default     = null
-}
-
-variable "log_analytics_workspace_sku" {
-  type        = string
-  description = "(Optional) The SKU of the Log Analytics Workspace. For new Subscriptions the SKU should be set to `PerGB2018`."
-  default     = "PerGB2018"
-}
-
-variable "log_retention_in_days" {
-  type        = number
-  description = "(Optional) The retention period for the Log Analytics Workspace logs defined in days."
-  default     = 30
 }
 
 variable "maintenance_window" {
@@ -484,50 +400,6 @@ variable "maintenance_window" {
   })
   description = "(Preview, Optional) The desired maintenance windows for the cluster. Currently, performing maintenance operations are considered best-effort only and are not guaranteed to occur within a specified window."
   default     = null
-}
-
-variable "microsoft_defender_enabled" {
-  type        = bool
-  description = "(Optional) Is Microsoft Defender on the cluster enabled? Requires `var.log_analytics_workspace_enabled` to be `true` to set this variable to `true`."
-  default     = false
-  nullable    = false
-}
-
-variable "net_profile_dns_service_ip" {
-  type        = string
-  description = "(Optional) IP address within the Kubernetes service address range that will be used by cluster service discovery (kube-dns). Changing this forces a new resource to be created."
-  default     = null
-}
-
-variable "net_profile_docker_bridge_cidr" {
-  type        = string
-  description = "(Optional) IP address (in CIDR notation) used as the Docker bridge IP address on nodes. Changing this forces a new resource to be created."
-  default     = null
-}
-
-variable "net_profile_outbound_type" {
-  type        = string
-  description = "(Optional) The outbound (egress) routing method which should be used for this AKS Cluster. Possible values are `loadBalancer` and `userDefinedRouting`. Defaults to `loadBalancer`."
-  default     = "loadBalancer"
-}
-
-variable "net_profile_pod_cidr" {
-  type        = string
-  description = "(Optional) The CIDR to use for pod IP addresses. This field can only be set when network_plugin is set to `kubenet`. Changing this forces a new resource to be created."
-  default     = null
-}
-
-variable "net_profile_service_cidr" {
-  type        = string
-  description = "(Optional) The network range used by the AKS Cluster. Changing this forces a new resource to be created."
-  default     = null
-}
-
-variable "network_plugin" {
-  type        = string
-  description = "Network plugin to use for networking. Defaults to Azure CNI. (`azure`)"
-  default     = "azure"
-  nullable    = false
 }
 
 variable "network_policy" {
@@ -548,29 +420,23 @@ variable "oidc_issuer_enabled" {
   default     = false
 }
 
-variable "default_node_pool_only_critical_addons_enabled" {
-  type        = bool
-  description = "(Optional) Enabling this option will taint default node pool with `CriticalAddonsOnly=true:NoSchedule` taint. Changing this forces a new resource to be created."
-  default     = null
-}
-
 variable "open_service_mesh_enabled" {
   type        = bool
   description = "(Optional) Enables Open Service Mesh. For more details, please visit [Open Service Mesh for AKS](https://docs.microsoft.com/azure/aks/open-service-mesh-about)."
   default     = false
-  nullable   = false
+  nullable    = false
 }
 
 variable "private_cluster_enabled" {
   type        = bool
-  description = "If true cluster API server will be exposed only on internal IP address and available only in cluster vnet."
-  default     = false
+  description = "If set to true, cluster API server will be exposed only on internal IP address and available only in cluster vnet."
+  default     = true
 }
 
 variable "private_cluster_public_fqdn_enabled" {
   type        = bool
   description = "(Optional) Specifies whether a Public FQDN for this Private Cluster should be added. Defaults to `false`."
-  default     = false
+  default     = true
 }
 
 variable "private_dns_zone_id" {
@@ -585,146 +451,89 @@ variable "public_ssh_key" {
   default     = ""
 }
 
-variable "rbac_aad" {
-  type        = bool
-  description = "(Optional) Is Azure Active Directory ingration enabled?"
-  default     = false
-  nullable    = false
-}
-
-variable "rbac_aad_admin_group_object_ids" {
-  type        = list(string)
-  description = "Object ID of groups with admin access."
-  default     = null
-}
-
-variable "rbac_aad_azure_rbac_enabled" {
-  type        = bool
-  description = "(Optional) Is Role Based Access Control based on Azure AD enabled?"
-  default     = null
-}
-
-variable "rbac_aad_client_app_id" {
-  type        = string
-  description = "The Client ID of an Azure Active Directory Application."
-  default     = null
-}
-
-variable "rbac_aad_managed" {
-  type        = bool
-  description = "Is the Azure Active Directory integration Managed, meaning that Azure will create/manage the Service Principal used for integration."
-  default     = false
-  nullable    = false
-}
-
-variable "rbac_aad_server_app_id" {
-  type        = string
-  description = "The Application ID of an Azure Active Directory Application."
-  default     = null
-}
-
-variable "rbac_aad_server_app_secret" {
-  type        = string
-  description = "The Application Secret of an Azure Active Directory Application."
-  default     = null
-}
-
-variable "rbac_aad_tenant_id" {
-  type        = string
-  description = "(Optional) The Tenant ID used for Azure Active Directory Application. If this isn't specified the Tenant ID of the current Subscription is used."
-  default     = null
-}
-
-variable "role_based_access_control_enabled" {
-  type        = bool
-  description = "(Optional) Enable Role Based Access Control."
-  default     = false
-  nullable    = false
-}
-
-variable "default_node_pool_scale_down_mode" {
-  type        = string
-  description = "(Optional) Specifies the autoscaling behaviour of the AKS Cluster. If not specified, it defaults to `Delete`. Possible values include `Delete` and `Deallocate`. Changing this forces a new resource to be created."
-  default     = "Delete"
-}
-
-variable "secret_rotation_enabled" {
-  type        = bool
-  description = "(Optional) Is secret rotation enabled? This variable is only used when `key_vault_secrets_provider_enabled` is `true` and defaults to `false`"
-  default     = false
-  nullable    = false
-}
-
-variable "secret_rotation_interval" {
-  type        = string
-  description = "The interval to poll for secret rotation. This attribute is only set when `secret_rotation` is `true` and defaults to `2m`"
-  default     = "2m"
-  nullable    = false
-}
-
 variable "sku_tier" {
   type        = string
   description = "The SKU Tier that should be used for this AKS Cluster. Possible values are `Free` and `Paid`"
   default     = "Free"
 }
 
-variable "storage_profile_blob_driver_enabled" {
-  type        = bool
-  description = "(Optional) Is the Blob CSI driver enabled? Defaults to `false`"
-  default     = false
-}
-
-variable "storage_profile_disk_driver_enabled" {
-  type        = bool
-  description = "(Optional) Is the Disk CSI driver enabled? Defaults to `true`"
-  default     = true
-}
-
-variable "storage_profile_disk_driver_version" {
-  type        = string
-  description = "(Optional) Disk CSI Driver version to be used. Possible values are `v1` and `v2`. Defaults to `v1`."
-  default     = "v1"
-}
-
-variable "storage_profile_enabled" {
-  description = "(Optional) Enable storage profile"
-  type        = bool
-  default     = false
-  nullable    = false
-}
-
-variable "storage_profile_file_driver_enabled" {
-  type        = bool
-  description = "(Optional) Is the File CSI driver enabled? Defaults to `true`"
-  default     = true
-}
-
-variable "storage_profile_snapshot_controller_enabled" {
-  type        = bool
-  description = "(Optional) Is the Snapshot Controller enabled? Defaults to `true`"
-  default     = true
-}
-
 variable "tags" {
   type        = map(string)
   description = "Any tags that should be present on the AKS Cluster resources"
-  default     = {}
-}
-
-variable "default_node_pool_ultra_ssd_enabled" {
-  type        = bool
-  description = "(Optional) Used to specify whether the Ultra SSD is enabled in the Default Node Pool. Defaults to false."
-  default     = false
-}
-
-variable "default_node_pool_vnet_subnet_id" {
-  type        = string
-  description = "(Optional) The ID of a Subnet where the Kubernetes Node Pool should exist. Changing this forces a new resource to be created."
   default     = null
 }
 
 variable "workload_identity_enabled" {
-  description = "(Optional) Enable or Disable Workload Identity. Defaults to false."
+  description = "(Optional, Preview), Enable or disable Workload Identity. Defaults to `false`."
   type        = bool
   default     = false
+}
+
+variable "enable_oms_agent" {
+  type    = bool
+  default = false
+}
+
+variable "enable_microsoft_defender" {
+  type    = bool
+  default = false
+}
+
+variable "create_node_resource_group" {
+  type    = bool
+  default = true
+
+}
+
+variable "create_container_registry" {
+  type    = bool
+  default = true
+}
+
+variable "container_registry" {
+  type = object({
+    name = string
+    sku  = string
+    tags = optional(map(string))
+  })
+  default = {
+    name = null
+    sku  = "Standard"
+    tags = null
+  }
+}
+
+variable "azuread_groups" {
+  type    = list(any)
+  default = []
+}
+
+variable "enable_preview_features" {
+  type    = bool
+  default = false
+}
+
+variable "image_cleaner_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "image_cleaner_interval_hours" {
+  type    = number
+  default = 48
+}
+
+# Preview feature: Workload Autoscaler
+variable "enable_workload_autoscaler_profile" {
+  type    = bool
+  default = false
+}
+
+variable "workload_autoscaler_profile" {
+  type = object({
+    keda_enabled = optional(bool, true)
+  })
+  default = {
+    keda_enabled = null
+  }
 }
