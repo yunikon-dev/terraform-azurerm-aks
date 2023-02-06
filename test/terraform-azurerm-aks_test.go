@@ -20,10 +20,6 @@ func TestIfAKSCreated(t *testing.T) {
 	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
 		// Set the path to the Terraform code that will be tested.
 		TerraformDir: "./fixture",
-		Vars: map[string]interface{}{
-			"cluster_name":        expectedClusterName,
-			"resource_group_name": expectedResourceGroupName,
-		},
 	})
 
 	// Clean up resources with "terraform destroy" at the end of the test.
