@@ -39,5 +39,5 @@ func TestIfAKSCreated(t *testing.T) {
 	// Look up the cluster node count
 	cluster, err := azure.GetManagedClusterE(t, expectedResourceGroupName, expectedClusterName, "")
 	require.NoError(t, err)
-	assert.GreaterOrEqual(t, cluster.ManagedClusterProperties.AgentPoolProfiles[0].Count, 1)
+	assert.GreaterOrEqual(t, *cluster.ManagedClusterProperties.AgentPoolProfiles[0].Count, 1)
 }
