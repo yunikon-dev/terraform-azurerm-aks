@@ -22,7 +22,7 @@ module "terraform-azurerm-aks" {
   source = "../.."
 
   resource_group_name       = azurerm_resource_group.main.name
-  cluster_name              = "rudytestakscluster"
+  cluster_name              = "testakscluster891104"
   location                  = azurerm_resource_group.main.location
   dns_prefix                = "testjeaks"
   create_container_registry = true
