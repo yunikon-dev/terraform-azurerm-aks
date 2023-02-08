@@ -553,7 +553,7 @@ variable "virtual_network_id" {
   default = null
 }
 
-variable "create_custom_private_dns_zone " {
+variable "create_custom_private_dns_zone" {
   type    = bool
   default = false
 }
