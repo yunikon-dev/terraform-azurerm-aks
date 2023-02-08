@@ -537,3 +537,23 @@ variable "workload_autoscaler_profile" {
     keda_enabled = null
   }
 }
+
+variable "azurerm_private_endpoint" {
+  type = map(object({
+    subnet_id            = optional(string)
+    private_dns_zone_ids = optional(list(string), [])
+    is_manual_connection = optional(bool, false)
+    subresource_names    = optional(list(string), ["aks"])
+  }))
+  default = {}
+}
+
+variable "virtual_network_id" {
+  type    = string
+  default = null
+}
+
+variable "create_custom_private_dns_zone " {
+  type    = bool
+  default = false
+}

@@ -5,7 +5,7 @@ resource "tls_private_key" "ssh" {
 
 resource "azurerm_user_assigned_identity" "main" {
   name                = "${var.cluster_name}-id"
-  location            = coalesce(var.location, "westeurope")
+  location            = coalesce(local.location, "westeurope")
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
@@ -19,9 +19,9 @@ data "azuread_group" "main" {
 
 resource "azurerm_kubernetes_cluster" "main" {
   name                                = var.cluster_name
-  location                            = var.location
+  location                            = local.location
   resource_group_name                 = var.resource_group_name
-  node_resource_group                 = var.create_node_resource_group ? "${var.resource_group_name}-nodes" : coalesce(var.node_resource_group, null)
+  node_resource_group                 = var.create_node_resource_group ? "${var.resource_group_name}-resources" : coalesce(var.node_resource_group, null)
   api_server_authorized_ip_ranges     = var.api_server_authorized_ip_ranges
   automatic_channel_upgrade           = var.automatic_channel_upgrade
   azure_policy_enabled                = var.azure_policy_enabled
@@ -34,7 +34,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   open_service_mesh_enabled           = var.open_service_mesh_enabled
   private_cluster_enabled             = var.private_cluster_enabled
   private_cluster_public_fqdn_enabled = var.private_cluster_public_fqdn_enabled
-  private_dns_zone_id                 = var.private_dns_zone_id
+  private_dns_zone_id                 = coalesce(azurerm_private_dns_zone.main[0].id, var.private_dns_zone_id)
   role_based_access_control_enabled   = var.azure_active_directory_role_based_access_control["azure_rbac_enabled"] ? true : coalesce(var.role_based_access_control_enabled, false)
   sku_tier                            = var.sku_tier
   tags                                = var.tags
@@ -71,6 +71,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   dynamic "auto_scaler_profile" {
     for_each = var.default_node_pool["enable_auto_scaling"] || var.default_node_pool["enable_auto_scaling"] ? ["auto_scaler_profile"] : []
+
     content {
       balance_similar_node_groups      = var.auto_scaler_profile["balance_similar_node_groups"]
       empty_bulk_delete_max            = var.auto_scaler_profile["empty_bulk_delete_max"]
@@ -110,7 +111,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   identity {
     type         = "UserAssigned"
-    identity_ids = concat(var.identity_ids, [azurerm_user_assigned_identity.main.id])
+    identity_ids = concat(var.identity_ids, [time_sleep.aks_creation_delay.triggers["id"]])
   }
 
   dynamic "ingress_application_gateway" {
@@ -256,7 +257,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 resource "azurerm_log_analytics_workspace" "main" {
   count = var.create_log_analytics_workspace ? 1 : 0
 
-  location            = coalesce(var.log_analytics_workspace["location"], var.location)
+  location            = coalesce(var.log_analytics_workspace["location"], local.location)
   name                = var.log_analytics_workspace["name"] == null ? "${var.cluster_name}-workspace" : var.log_analytics_workspace["name"]
   resource_group_name = coalesce(var.log_analytics_workspace["resource_group_name"], var.resource_group_name)
   retention_in_days   = var.log_analytics_workspace["retention_in_days"]
@@ -267,7 +268,7 @@ resource "azurerm_log_analytics_workspace" "main" {
 resource "azurerm_log_analytics_solution" "main" {
   count = var.create_log_analytics_solution ? 1 : 0
 
-  location              = coalesce(var.log_analytics_solution["location"], var.location)
+  location              = coalesce(var.log_analytics_solution["location"], local.location)
   resource_group_name   = try(azurerm_log_analytics_workspace.main[0].resource_group_name, var.log_analytics_solution["resource_group_name"], var.resource_group_name)
   solution_name         = "ContainerInsights"
   workspace_name        = try(azurerm_log_analytics_workspace.main[0].name, null)
@@ -317,9 +318,79 @@ resource "azurerm_container_registry" "main" {
 
   name                = coalesce(var.container_registry["name"], replace("${var.cluster_name}acr", "[^a-zA-Z0-9]+", ""))
   resource_group_name = var.resource_group_name
-  location            = var.location
+  location            = local.location
   sku                 = var.container_registry["sku"]
   tags                = merge(var.tags, var.container_registry["tags"])
+}
+
+# Private Endpoint
+resource "azurerm_private_endpoint" "main" {
+  for_each = var.azurerm_private_endpoint != null ? var.azurerm_private_endpoint : {}
+
+  name                = "${azurerm_kubernetes_cluster.main.name}-private-endpoint"
+  location            = azurerm_kubernetes_cluster.main.location
+  resource_group_name = var.resource_group_name
+  subnet_id           = each.value.subnet_id
+  tags                = var.tags
+
+  private_dns_zone_group {
+    name                 = "${azurerm_kubernetes_cluster.main.name}-private-dns-zone-group"
+    private_dns_zone_ids = each.value.private_dns_zone_ids
+  }
+
+  private_service_connection {
+    name                           = "${azurerm_kubernetes_cluster.main.name}-private-service_connection"
+    private_connection_resource_id = azurerm_kubernetes_cluster.main.id
+    is_manual_connection           = each.value.is_manual_connection
+    subresource_names              = each.value.subresource_names
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags
+    ]
+  }
+}
+
+resource "azurerm_private_dns_zone" "main" {
+  count = var.create_custom_private_dns_zone ? 1 : 0
+
+  name                = "privatelink.${local.location}.azmk8s.io"
+  resource_group_name = var.resource_group_name
+  tags                = var.tags
+
+  lifecycle {
+    ignore_changes = [
+      tags
+    ]
+  }
+}
+
+# Delay for permissions propagation
+resource "time_sleep" "aks_creation_delay" {
+  create_duration = "10m"
+
+  triggers = {
+    id = azurerm_user_assigned_identity.main.id
+  }
+}
+
+resource "azurerm_role_assignment" "dns" {
+  count = var.create_custom_private_dns_zone ? 1 : 0
+
+  principal_id                     = azurerm_user_assigned_identity.main.principal_id
+  role_definition_name             = "Private DNS Zone Contributor"
+  scope                            = azurerm_private_dns_zone.main[0].id
+  skip_service_principal_aad_check = true
+}
+
+resource "azurerm_role_assignment" "vnet" {
+  count = var.create_custom_private_dns_zone ? 1 : 0
+
+  principal_id                     = azurerm_user_assigned_identity.main.principal_id
+  role_definition_name             = "Private DNS Zone Contributor"
+  scope                            = var.virtual_network_id
+  skip_service_principal_aad_check = true
 }
 
 resource "azurerm_role_assignment" "acr" {
@@ -329,4 +400,8 @@ resource "azurerm_role_assignment" "acr" {
   role_definition_name             = "AcrPull"
   scope                            = azurerm_container_registry.main[0].id
   skip_service_principal_aad_check = true
+}
+
+locals {
+  location = replace(lower(var.location), " ", "")
 }

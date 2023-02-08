@@ -30,11 +30,12 @@ module "terraform-azurerm-aks" {
   default_node_pool = {
     vnet_subnet_id             = azurerm_subnet.main.id
     enable_enable_auto_scaling = true
+    node_count                 = 1
   }
   node_pools = {
     "compute" = {
-      min_count           = 1
-      enable_auto_scaling = true
+      node_count          = 1
+      enable_auto_scaling = false
     }
   }
 
