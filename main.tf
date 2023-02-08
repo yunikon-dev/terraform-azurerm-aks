@@ -34,7 +34,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   open_service_mesh_enabled           = var.open_service_mesh_enabled
   private_cluster_enabled             = var.private_cluster_enabled
   private_cluster_public_fqdn_enabled = var.private_cluster_public_fqdn_enabled
-  private_dns_zone_id                 = coalesce(azurerm_private_dns_zone.main[0].id, var.private_dns_zone_id)
+  private_dns_zone_id                 = coalesce(try(azurerm_private_dns_zone.main[0].id, null), var.private_dns_zone_id)
   role_based_access_control_enabled   = var.azure_active_directory_role_based_access_control["azure_rbac_enabled"] ? true : coalesce(var.role_based_access_control_enabled, false)
   sku_tier                            = var.sku_tier
   tags                                = var.tags
