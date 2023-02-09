@@ -237,7 +237,7 @@ variable "ingress_application_gateway" {
     subnet_cidr  = optional(string)
     subnet_id    = optional(string)
   })
-  default = null
+  default     = null
   description = "(Optional) Application Gateway Ingress Controller variables. Create an Application Gateway and pass the required variables to this module. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
@@ -386,7 +386,7 @@ variable "maintenance_window" {
     })),
   })
   default     = null
-  description = "(Preview, Optional) The desired maintenance windows for the cluster. Currently, performing maintenance operations are considered best-effort only and are not guaranteed to occur within a specified window."
+  description = "(Preview, Optional) The desired maintenance windows for the cluster. Currently, performing maintenance operations are considered best-effort only and are not guaranteed to occur within a specified window. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 
 }
 
@@ -486,34 +486,37 @@ variable "container_registry" {
   description = "(Optional) Container Registry variables. When defined, creates a Container Registry and a role assignment that grants the Kubernetes Cluster `AcrPull` permissions. Refer to the [azurem_container_registry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_registry) documentation for more information on these variables."
 }
 
-
-
 variable "azuread_groups" {
-  type    = list(any)
-  default = []
+  type        = list(any)
+  default     = []
+  description = "List of Azure AD Group names that will be assigned Administrator permissions on the Kubernetes Cluster."
 }
 
 variable "preview_features_enabled" {
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
+  description = "(Optional) Enables Preview features on the Kubernetes Cluster. Warning: Do not enable this in production."
 }
 
 # Preview features
 variable "image_cleaner_enabled" {
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
+  description = "(Optional, Preview) Enables the Image Cleaner."
 }
 
 variable "image_cleaner_interval_hours" {
-  type    = number
-  default = 48
+  type        = number
+  default     = 48
+  description = "(Optional, Preview) Controls the Image Cleaner interval in hours."
 }
 
 variable "workload_autoscaler_profile" {
   type = object({
     keda_enabled = optional(bool, true)
   })
-  default = null
+  default     = null
+  description = "(Optional, Preview) Controls the Workload Autoscaler. Refer to [the documentation](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster#register-the-enableworkloadidentitypreview-feature-flag) for more information."
 }
 
 variable "azurerm_private_endpoint" {
@@ -521,24 +524,28 @@ variable "azurerm_private_endpoint" {
     subnet_id            = optional(string)
     private_dns_zone_ids = optional(list(string), [])
     is_manual_connection = optional(bool, false)
-    subresource_names    = optional(list(string), ["aks"])
+    subresource_names    = optional(list(string), ["management"])
   }))
-  default = {}
+  default     = {}
+  description = "(Optional) Private Endpoint for the Kubernetes Cluster."
 }
 
 variable "virtual_network_id" {
-  type    = string
-  default = null
+  type        = string
+  default     = null
+  description = "(Optional) ID of the Virtual Network to link the custom Private DNS Zone with."
 }
 
 variable "create_custom_private_dns_zone" {
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
+  description = "(Optional) Creates a custom Private DNS Zone that is not managed by the Kubernetes Cluster."
 }
 
 variable "public_network_access_enabled" {
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
+  description = "(Optional) Enables public access to the Kubernetes Cluster API."
 }
 
 variable "api_server_access_profile" {
@@ -547,5 +554,6 @@ variable "api_server_access_profile" {
     subnet_id                = optional(string)
     vnet_integration_enabled = optional(bool, false)
   })
-  default = null
+  default     = null
+  description = "(Optional) Controls access options of the API server. `vnet_integration_enabled` is currently in Preview. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
 }

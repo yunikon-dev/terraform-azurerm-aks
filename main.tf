@@ -272,6 +272,10 @@ resource "azurerm_kubernetes_cluster" "main" {
       condition     = !(var.public_network_access_enabled && var.private_cluster_enabled)
       error_message = "Public and Private access cannot be enabled at the same time."
     }
+    precondition {
+      condition     = !(var.create_custom_private_dns_zone && !var.virtual_network_id)
+      error_message = "When creating a custom Private DNS Zone, a Virtual Network ID must be passed via `virtual_network_id`."
+    }
   }
 }
 
@@ -348,7 +352,7 @@ resource "azurerm_container_registry" "main" {
 
 # Create a Private Endpoint
 resource "azurerm_private_endpoint" "main" {
-  for_each = var.azurerm_private_endpoint != null ? var.azurerm_private_endpoint : {}
+  for_each = var.private_endpoint != null ? var.private_endpoint : {}
 
   name                = "${azurerm_kubernetes_cluster.main.name}-private-endpoint"
   location            = azurerm_kubernetes_cluster.main.location
