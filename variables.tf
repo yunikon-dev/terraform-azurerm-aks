@@ -1,38 +1,74 @@
 # Cluster variables
-variable "dns_prefix" {
+variable "name" {
   type        = string
-  description = "(Optional) The DNS prefix for the Azure AKS Cluster."
+  default     = null
+  description = "(Optional) The name for the Azure Kubernetes Service resources created in the specified Resource Group."
 }
 
 variable "resource_group_name" {
   type        = string
-  description = "(Required) The name of the Resource Group to be used."
+  description = "(Required) Specifies the Resource Group where the Managed Kubernetes Cluster should exist. Changing this forces a new resource to be created."
 }
 
-variable "admin_username" {
+variable "location" {
   type        = string
-  description = "(Optional) The username of the local administrator to be created on the AKS Cluster. Set this variable to `null` to turn off the cluster's `linux_profile`. Changing this forces a new resource to be created."
   default     = null
+  description = "(Required) The location where the Managed Kubernetes Cluster should be created. Changing this forces a new resource to be created."
+}
+
+variable "dns_prefix" {
+  type        = string
+  description = "(Optional) DNS prefix specified when creating the Managed Kubernetes Cluster. Changing this forces a new resource to be created."
 }
 
 variable "create_analytics_workspace" {
   type        = bool
-  description = "Create a Log Analytics Workspace for Kubernetes."
   default     = false
+  description = "(Optional) Create a Log Analytics Workspace for Kubernetes."
+
 }
 
 variable "create_analytics_solution" {
   type        = bool
-  description = "Create a Log Analytics Solution for Kubernetes."
   default     = false
+  description = "(Optional) Create a Log Analytics Solution for Kubernetes."
 }
 
 variable "role_based_access_control_enabled" {
-  type    = bool
-  default = true
+  type        = bool
+  default     = true
+  description = "(Optional) Whether Role Based Access Control for the Kubernetes Cluster should be enabled. Defaults to true. Changing this forces a new resource to be created."
 }
 
-# New Default Node Pool variables
+# Default Node Pool variables
+variable "default_node_pool" {
+  type = object({
+    name                         = optional(string, "default")
+    vm_size                      = optional(string, "Standard_B2s")
+    enable_auto_scaling          = optional(bool, true)
+    enable_host_encryption       = optional(bool)
+    enable_node_public_ip        = optional(string)
+    max_count                    = optional(number)
+    max_pods                     = optional(number, 50)
+    min_count                    = optional(number, 1)
+    node_count                   = optional(number, 1)
+    node_labels                  = optional(map(string))
+    node_taints                  = optional(list(string), null)
+    only_critical_addons_enabled = optional(bool, null)
+    orchestrator_version         = optional(string)
+    os_disk_size_gb              = optional(number, 40)
+    os_disk_type                 = optional(string)
+    pod_subnet_id                = optional(string)
+    scale_down_mode              = optional(string)
+    tags                         = optional(map(string), null)
+    type                         = optional(string, "VirtualMachineScaleSets")
+    ultra_ssd_enabled            = optional(bool, false)
+    vnet_subnet_id               = optional(string)
+    zones                        = optional(list(number), [1, 2, 3])
+  })
+  description = "(Required) Default Node Pool variables. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
+}
+
 variable "node_pools" {
   type = map(object({
     vm_size                      = optional(string, "Standard_F4s")
@@ -57,41 +93,8 @@ variable "node_pools" {
     vnet_subnet_id               = optional(string)
     zones                        = optional(list(number))
   }))
-  description = "Node pools"
-}
-
-variable "default_node_pool" {
-  type = object({
-    name                         = optional(string, "default")
-    vm_size                      = optional(string, "Standard_B2s")
-    enable_auto_scaling          = optional(bool, true)
-    enable_host_encryption       = optional(bool)
-    enable_node_public_ip        = optional(string)
-    max_count                    = optional(number)
-    max_pods                     = optional(number, 50)
-    min_count                    = optional(number, 1)
-    node_count                   = optional(number, 1)
-    node_labels                  = optional(map(string))
-    node_taints                  = optional(list(string), null)
-    only_critical_addons_enabled = optional(bool)
-    orchestrator_version         = optional(string)
-    os_disk_size_gb              = optional(number)
-    os_disk_type                 = optional(string)
-    pod_subnet_id                = optional(string)
-    scale_down_mode              = optional(string)
-    tags                         = optional(map(string), null)
-    type                         = optional(string, "VirtualMachineScaleSets")
-    ultra_ssd_enabled            = optional(bool)
-    vnet_subnet_id               = optional(string)
-    zones                        = optional(list(number), [1, 2, 3])
-  })
-  description = "Default Node Pool variables"
-}
-
-variable "api_server_authorized_ip_ranges" {
-  type        = set(string)
-  description = "(Optional) The IP ranges to allow for incoming traffic to the server nodes."
-  default     = null
+  default     = {}
+  description = "(Optional) Additional Node Pool variables. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster_node_pool) documentation for more information on these variables."
 }
 
 variable "auto_scaler_profile" {
@@ -133,7 +136,7 @@ variable "auto_scaler_profile" {
     skip_nodes_with_local_storage    = null
     skip_nodes_with_system_pods      = null
   }
-  description = "List of auto scaler profiles."
+  description = "(Optional) Auto scaler variables. Only used when `enable_auto_scaling` is set to `true`. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
 variable "load_balancer_profile" {
@@ -153,6 +156,7 @@ variable "load_balancer_profile" {
     outbound_ip_prefix_ids      = null
     outbound_ports_allocated    = null
   }
+  description = "(Optional) Load balancer variables. Only used when `load_balancer_sku` is set to `standard`. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
 variable "network_profile" {
@@ -177,6 +181,7 @@ variable "network_profile" {
     pod_cidr           = null
     service_cidr       = null
   }
+  description = "(Required) Networking variables. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
 variable "storage_profile" {
@@ -194,11 +199,13 @@ variable "storage_profile" {
     file_driver_enabled         = true
     snapshot_controller_enabled = true
   }
+  description = "(Optional) Storage variables. Enables support for blobs, disks, file shares and snapshotting. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
-variable "enable_azure_active_directory_role_based_access_control" {
-  type    = bool
-  default = false
+variable "azure_active_directory_role_based_access_control_enabled" {
+  type        = bool
+  default     = false
+  description = "(Optional) Enables support for Azure Active Directory RBAC."
 }
 
 variable "azure_active_directory_role_based_access_control" {
@@ -220,13 +227,7 @@ variable "azure_active_directory_role_based_access_control" {
     server_app_secret      = null
     tenant_id              = null
   }
-}
-
-variable "enable_ingress_application_gateway" {
-  type        = bool
-  description = "Whether to deploy an Application Gateway Ingress Controller to this AKS Cluster."
-  default     = false
-  nullable    = false
+  description = "(Optional) Azure Active Directory RBAC variables. When `managed` is set to `true`, `admin_group_object_ids` must be given the `object_id`s of an Azure AD Group and `azure_rbac_enabled` can be specified. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
 variable "ingress_application_gateway" {
@@ -236,17 +237,8 @@ variable "ingress_application_gateway" {
     subnet_cidr  = optional(string)
     subnet_id    = optional(string)
   })
-  default = {
-    gateway_id   = null
-    gateway_name = null
-    subnet_cidr  = null
-    subnet_id    = null
-  }
-}
-
-variable "enable_key_vault_secrets_provider" {
-  type    = bool
-  default = true
+  default = null
+  description = "(Optional) Application Gateway Ingress Controller variables. Create an Application Gateway and pass the required variables to this module. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
 variable "key_vault_secrets_provider" {
@@ -258,6 +250,7 @@ variable "key_vault_secrets_provider" {
     secret_rotation_enabled  = true
     secret_rotation_interval = "5m"
   }
+  description = "(Optional) Set the configurable options for the Key Vault Secrets provider. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
 variable "linux_profile" {
@@ -269,12 +262,13 @@ variable "linux_profile" {
     admin_username = "azureadmin"
     key_data       = null
   }
+  description = "(Optional) Sets the user profile options for Linux OS node pools."
 }
 
 variable "create_log_analytics_workspace" {
   type        = bool
   default     = false
-  description = "value"
+  description = "(Optional) Creates a Log Analytics Workspace dedicated to the Kubernetes Cluster."
 }
 
 variable "log_analytics_workspace" {
@@ -294,13 +288,13 @@ variable "log_analytics_workspace" {
     sku                 = null
     tags                = null
   }
-  description = "value"
+  description = "(Optional) Sets the variables for the Log Analytics Workspace for this cluster. Refer to the [azurerm_kubernetes_cluster](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster) documentation for more information on these variables."
 }
 
 variable "create_log_analytics_solution" {
   type        = bool
   default     = false
-  description = "value"
+  description = "(Optional) Creates a Log Analytics Solution dedicated to the Kubernetes Cluster."
 }
 
 variable "log_analytics_solution" {
@@ -312,14 +306,15 @@ variable "log_analytics_solution" {
     location = null
     tags     = null
   }
-  description = "value"
+  description = "(Optional) Creates a Log Analytics Solution dedicated to the cluster. Requires `create_log_analytics_workspace` to be set to `true`."
 }
 
 #
 variable "automatic_channel_upgrade" {
   type        = string
   default     = null
-  description = "(Optional) The upgrade channel for this AKS Cluster. Possible values are patch, rapid, node-image, and stable. By default, automatic upgrades are turned off. Note that you cannot use the patch upgrade channel and still specify the patch version using kubernetes_version. See the documentation for more information."
+  description = "(Optional) The upgrade channel for this Kubernetes Cluster. Possible values are patch, rapid, node-image, and stable. By default, automatic upgrades are turned off. Note that you cannot use the patch upgrade channel and still specify the patch version using kubernetes_version. See the documentation for more information."
+
   validation {
     condition = var.automatic_channel_upgrade == null ? true : contains([
       "patch", "stable", "rapid", "node-image"
@@ -330,38 +325,35 @@ variable "automatic_channel_upgrade" {
 
 variable "azure_policy_enabled" {
   type        = bool
-  description = "(Optional) Enables the Azure Policy Add-on."
   default     = false
-}
+  description = "(Optional) Should the Azure Policy Add-On be enabled? For more details, please visit [Understand Azure Policy for Azure Kubernetes Service](https://docs.microsoft.com/en-ie/azure/governance/policy/concepts/rego-for-aks)."
 
-variable "cluster_name" {
-  type        = string
-  description = "(Optional) The name for the Azure Kubernetes Service resources created in the specified Resource Group."
-  default     = null
 }
 
 variable "disk_encryption_set_id" {
   type        = string
-  description = "(Optional) The ID of the Disk Encryption Set which should be used for the Nodes and Volumes. More information [can be found in the documentation](https://docs.microsoft.com/azure/aks/azure-disk-customer-managed-keys). Changing this forces a new resource to be created."
   default     = null
+  description = "(Optional) The ID of the Disk Encryption Set which should be used for the Nodes and Volumes. More information [can be found in the documentation](https://docs.microsoft.com/azure/aks/azure-disk-customer-managed-keys). Changing this forces a new resource to be created."
+
 }
 
 variable "http_application_routing_enabled" {
   type        = bool
-  description = "(Optional) Enable HTTP Application Routing Addon (forces recreation). This setting is not recommended for non-development clusters."
   default     = false
+  description = "(Optional) Should HTTP Application Routing be enabled?"
 }
 
 variable "identity_ids" {
   type        = list(string)
-  description = "(Optional) Specifies a list of User Assigned Managed Identity IDs to be assigned to this AKS Cluster."
   default     = []
+  description = "(Optional) Specifies a list of User Assigned Managed Identity IDs to be assigned to this AKS Cluster."
+
 }
 
 variable "identity_type" {
   type        = string
-  description = "(Optional) The type of identity used for the managed cluster. Conflict with `client_id` and `client_secret`. Possible values are `SystemAssigned`, `UserAssigned`, `SystemAssigned, UserAssigned`(to enable both). If `UserAssigned` or `SystemAssigned, UserAssigned` is set, an `identity_ids` must be set as well."
   default     = "SystemAssigned"
+  description = "(Optional) The type of identity used for the managed cluster. Conflict with `client_id` and `client_secret`. Possible values are `SystemAssigned`, `UserAssigned`, `SystemAssigned, UserAssigned`(to enable both). If `UserAssigned` or `SystemAssigned, UserAssigned` is set, an `identity_ids` must be set as well."
 
   validation {
     condition     = var.identity_type == "SystemAssigned" || var.identity_type == "UserAssigned" || var.identity_type == "SystemAssigned, UserAssigned"
@@ -371,20 +363,15 @@ variable "identity_type" {
 
 variable "kubernetes_version" {
   type        = string
-  description = "Specify which Kubernetes release to use. The default used is the latest Kubernetes version available in the region"
   default     = null
+  description = "(Optional) Version of Kubernetes specified when creating the AKS managed cluster. If not specified, the latest recommended version will be used at provisioning time (but won't auto-upgrade). AKS does not require an exact patch version to be specified, minor version aliases such as `1.22` are also supported. The minor version's latest GA patch is automatically chosen in that case. More details can be found in [the documentation](https://docs.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli#alias-minor-version)."
 }
 
 variable "local_account_disabled" {
   type        = bool
-  description = "(Optional) - If set to `true`, local accounts will be disabled. Defaults to `false`. See [the documentation](https://docs.microsoft.com/azure/aks/managed-aad#disable-local-accounts) for more information."
   default     = true
-}
+  description = "(Optional) If true local accounts will be disabled. See [the documentation](https://docs.microsoft.com/azure/aks/managed-aad#disable-local-accounts) for more information."
 
-variable "location" {
-  type        = string
-  description = "Azure region of the AKS Cluster, if not defined, this setting will be inherited from the Resource Group."
-  default     = null
 }
 
 variable "maintenance_window" {
@@ -398,121 +385,120 @@ variable "maintenance_window" {
       start = string
     })),
   })
-  description = "(Preview, Optional) The desired maintenance windows for the cluster. Currently, performing maintenance operations are considered best-effort only and are not guaranteed to occur within a specified window."
   default     = null
+  description = "(Preview, Optional) The desired maintenance windows for the cluster. Currently, performing maintenance operations are considered best-effort only and are not guaranteed to occur within a specified window."
+
 }
 
 variable "network_policy" {
   type        = string
-  description = " (Optional) Sets up Network Policy to be used with Azure CNI. Network Policy allows control of the traffic flow between pods. Currently supported values are `calico` and `azure`. Changing this forces a new resource to be created."
   default     = null
+  description = " (Optional) Sets up Network Policy to be used with Azure CNI. Network Policy allows control of the traffic flow between pods. Currently supported values are `calico` and `azure`. Changing this forces a new resource to be created."
+
 }
 
 variable "node_resource_group" {
   type        = string
-  description = "The auto-generated Resource Group which contains the resources for the AKS Cluster. Changing this forces a new resource to be created."
   default     = null
+  description = "(Optional) The auto-generated Resource Group which contains the resources for the Kubernetes Cluster. Changing this forces a new resource to be created."
+
 }
 
 variable "oidc_issuer_enabled" {
-  description = "Enable or Disable the OIDC issuer URL. Defaults to false."
   type        = bool
   default     = false
+  description = "(Optional) Enable or Disable the OIDC issuer URL. Defaults to false."
+
 }
 
 variable "open_service_mesh_enabled" {
   type        = bool
-  description = "(Optional) Enables Open Service Mesh. For more details, please visit [Open Service Mesh for AKS](https://docs.microsoft.com/azure/aks/open-service-mesh-about)."
   default     = false
   nullable    = false
+  description = "(Optional) Enables Open Service Mesh. For more details, please visit [Open Service Mesh for AKS](https://docs.microsoft.com/azure/aks/open-service-mesh-about)."
+
 }
 
 variable "private_cluster_enabled" {
   type        = bool
-  description = "If set to true, cluster API server will be exposed only on internal IP address and available only in cluster vnet."
   default     = true
+  description = "(Optional) Should this Kubernetes Cluster have its API server only exposed on internal IP addresses? This provides a Private IP Address for the Kubernetes API on the Virtual Network where the Kubernetes Cluster is located. Defaults to `false`. Changing this forces a new resource to be created."
+
 }
 
 variable "private_cluster_public_fqdn_enabled" {
   type        = bool
-  description = "(Optional) Specifies whether a Public FQDN for this Private Cluster should be added. Defaults to `false`."
   default     = true
+  description = "(Optional) Specifies whether a Public FQDN for this Private Kubernetes Cluster should be added. Defaults to `false`."
 }
 
 variable "private_dns_zone_id" {
   type        = string
-  description = "(Optional) Either the ID of Private DNS Zone which should be delegated to this Cluster, `System` to have AKS manage this or `None`. In case of `None` you will need to bring your own DNS server and set up resolving, otherwise cluster will have issues after provisioning. Changing this forces a new resource to be created."
   default     = null
-}
+  description = "(Optional) Either the ID of Private DNS Zone which should be delegated to this Cluster, `System` to have AKS manage this or `None`. In case of `None` you will need to bring your own DNS server and set up resolving, otherwise, the cluster will have issues after provisioning. Changing this forces a new resource to be created."
 
-variable "public_ssh_key" {
-  type        = string
-  description = "A custom ssh key to control access to the AKS Cluster. Changing this forces a new resource to be created."
-  default     = ""
 }
 
 variable "sku_tier" {
   type        = string
-  description = "The SKU Tier that should be used for this AKS Cluster. Possible values are `Free` and `Paid`"
   default     = "Free"
+  description = "(Optional) The SKU Tier that should be used for this Kubernetes Cluster. Possible values are `Free` and `Paid` (which includes the Uptime SLA). Defaults to `Free`."
 }
 
 variable "tags" {
   type        = map(string)
-  description = "Any tags that should be present on the AKS Cluster resources"
   default     = null
+  description = "(Optional) A mapping of tags to assign to the resource."
+
 }
 
 variable "workload_identity_enabled" {
-  description = "(Optional, Preview), Enable or disable Workload Identity. Defaults to `false`."
   type        = bool
   default     = false
+  description = "(Optional, Preview), Enable or disable Workload Identity. Defaults to `false`."
+
 }
 
-variable "enable_oms_agent" {
+variable "oms_agent_enabled" {
+  type        = bool
+  default     = false
+  description = "(Optional) Enables the OMS Agent for the Kubernetes Cluster. Defaults to `false`."
+}
+
+variable "microsoft_defender_enabled" {
+  type        = bool
+  default     = false
+  description = "(Optional) Enables Microsoft Defender for the Kubernetes Cluster. Defaults to `false`."
+}
+
+variable "container_registry_enabled" {
   type    = bool
   default = false
-}
-
-variable "enable_microsoft_defender" {
-  type    = bool
-  default = false
-}
-
-variable "create_node_resource_group" {
-  type    = bool
-  default = true
-
-}
-
-variable "create_container_registry" {
-  type    = bool
-  default = true
 }
 
 variable "container_registry" {
   type = object({
     name = string
-    sku  = string
+    sku  = optional(string, "Standard")
     tags = optional(map(string))
   })
-  default = {
-    name = null
-    sku  = "Standard"
-    tags = null
-  }
+  default     = null
+  description = "(Optional) Container Registry variables. When defined, creates a Container Registry and a role assignment that grants the Kubernetes Cluster `AcrPull` permissions. Refer to the [azurem_container_registry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_registry) documentation for more information on these variables."
 }
+
+
 
 variable "azuread_groups" {
   type    = list(any)
   default = []
 }
 
-variable "enable_preview_features" {
+variable "preview_features_enabled" {
   type    = bool
   default = false
 }
 
+# Preview features
 variable "image_cleaner_enabled" {
   type    = bool
   default = false
@@ -523,19 +509,11 @@ variable "image_cleaner_interval_hours" {
   default = 48
 }
 
-# Preview feature: Workload Autoscaler
-variable "enable_workload_autoscaler_profile" {
-  type    = bool
-  default = false
-}
-
 variable "workload_autoscaler_profile" {
   type = object({
     keda_enabled = optional(bool, true)
   })
-  default = {
-    keda_enabled = null
-  }
+  default = null
 }
 
 variable "azurerm_private_endpoint" {
@@ -556,4 +534,18 @@ variable "virtual_network_id" {
 variable "create_custom_private_dns_zone" {
   type    = bool
   default = false
+}
+
+variable "public_network_access_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "api_server_access_profile" {
+  type = object({
+    authorized_ip_ranges     = optional(list(string))
+    subnet_id                = optional(string)
+    vnet_integration_enabled = optional(bool, false)
+  })
+  default = null
 }

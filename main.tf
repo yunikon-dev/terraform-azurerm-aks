@@ -1,15 +1,18 @@
+# Generate an SSH key
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
+# Create a User Assigned Identity for the Kubernetes Cluster
 resource "azurerm_user_assigned_identity" "main" {
-  name                = "${var.cluster_name}-id"
+  name                = "${var.name}-id"
   location            = coalesce(local.location, "westeurope")
   resource_group_name = var.resource_group_name
   tags                = var.tags
 }
 
+# Read any given Azure AD Groups to extract their object_id
 data "azuread_group" "main" {
   for_each = toset(var.azuread_groups)
 
@@ -17,12 +20,12 @@ data "azuread_group" "main" {
   security_enabled = true
 }
 
+# Create the Kubernetes Cluster
 resource "azurerm_kubernetes_cluster" "main" {
-  name                                = var.cluster_name
+  name                                = var.name
   location                            = local.location
   resource_group_name                 = var.resource_group_name
-  node_resource_group                 = var.create_node_resource_group ? "${var.resource_group_name}-resources" : coalesce(var.node_resource_group, null)
-  api_server_authorized_ip_ranges     = var.api_server_authorized_ip_ranges
+  node_resource_group                 = coalesce(var.node_resource_group, "${var.resource_group_name}-resources")
   automatic_channel_upgrade           = var.automatic_channel_upgrade
   azure_policy_enabled                = var.azure_policy_enabled
   disk_encryption_set_id              = var.disk_encryption_set_id
@@ -33,6 +36,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   oidc_issuer_enabled                 = var.oidc_issuer_enabled
   open_service_mesh_enabled           = var.open_service_mesh_enabled
   private_cluster_enabled             = var.private_cluster_enabled
+  public_network_access_enabled       = var.public_network_access_enabled
   private_cluster_public_fqdn_enabled = var.private_cluster_public_fqdn_enabled
   private_dns_zone_id                 = try(azurerm_private_dns_zone.main[0].id, var.private_dns_zone_id, null)
   role_based_access_control_enabled   = var.azure_active_directory_role_based_access_control["azure_rbac_enabled"] ? true : coalesce(var.role_based_access_control_enabled, false)
@@ -94,7 +98,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   dynamic "azure_active_directory_role_based_access_control" {
-    for_each = var.enable_azure_active_directory_role_based_access_control ? ["azure_active_directory_role_based_access_control"] : []
+    for_each = var.azure_active_directory_role_based_access_control_enabled ? ["azure_active_directory_role_based_access_control"] : []
 
     content {
       managed   = var.azure_active_directory_role_based_access_control["managed"]
@@ -115,7 +119,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   dynamic "ingress_application_gateway" {
-    for_each = var.enable_ingress_application_gateway ? ["ingress_application_gateway"] : []
+    for_each = var.ingress_application_gateway != null ? ["ingress_application_gateway"] : []
 
     content {
       gateway_id   = var.ingress_application_gateway["gateway_id"]
@@ -126,7 +130,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   dynamic "key_vault_secrets_provider" {
-    for_each = var.enable_key_vault_secrets_provider ? ["key_vault_secrets_provider"] : []
+    for_each = var.key_vault_secrets_provider != null ? ["key_vault_secrets_provider"] : []
 
     content {
       secret_rotation_enabled  = var.key_vault_secrets_provider["secret_rotation_enabled"]
@@ -165,16 +169,25 @@ resource "azurerm_kubernetes_cluster" "main" {
     }
   }
 
+  dynamic "api_server_access_profile" {
+    for_each = var.public_network_access_enabled || var.api_server_access_profile != null ? ["api_server_access_profile"] : []
+
+    content {
+      authorized_ip_ranges     = var.public_network_access_enabled ? concat(["0.0.0.0/32"], try(var.api_server_access_profile["authorized_ip_ranges"], [])) : var.api_server_access_profile["authorized_ip_ranges"]
+      subnet_id                = var.api_server_access_profile["subnet_id"]
+      vnet_integration_enabled = var.preview_features_enabled && var.api_server_access_profile["vnet_integration_enabled"] != null ? var.api_server_access_profile["vnet_integration_enabled"] : false
+    }
+  }
+
   dynamic "microsoft_defender" {
-    for_each = var.enable_microsoft_defender ? ["microsoft_defender"] : []
+    for_each = var.microsoft_defender_enabled ? ["microsoft_defender"] : []
     content {
       log_analytics_workspace_id = try(azurerm_log_analytics_workspace.main[0].id, null)
     }
   }
 
-  # Preview feature
   dynamic "workload_autoscaler_profile" {
-    for_each = var.enable_workload_autoscaler_profile ? ["workload_autoscaler_profile"] : []
+    for_each = var.workload_autoscaler_profile != null && var.preview_features_enabled ? ["workload_autoscaler_profile"] : []
 
     content {
       keda_enabled = var.workload_autoscaler_profile["keda_enabled"]
@@ -202,7 +215,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   dynamic "oms_agent" {
-    for_each = var.enable_oms_agent ? ["oms_agent"] : []
+    for_each = var.oms_agent_enabled ? ["oms_agent"] : []
 
     content {
       log_analytics_workspace_id = try(azurerm_log_analytics_workspace.main[0].id, null)
@@ -228,7 +241,7 @@ resource "azurerm_kubernetes_cluster" "main" {
       error_message = "When identity_type `UserAssigned` or `SystemAssigned, UserAssigned` is set, `identity_ids` must be set as well."
     }
     precondition {
-      condition     = !(var.enable_microsoft_defender && !var.create_log_analytics_workspace)
+      condition     = !(var.microsoft_defender_enabled && !var.create_log_analytics_workspace)
       error_message = "Enabling Microsoft Defender requires that `var.create_log_analytics_workspace` be set to true."
     }
     precondition {
@@ -240,16 +253,24 @@ resource "azurerm_kubernetes_cluster" "main" {
       error_message = "Either disable automatic upgrades, or only specify up to the minor version when using `automatic_channel_upgrade=patch` or don't specify `kubernetes_version` at all when using `automatic_channel_upgrade=stable|rapid|node-image`. With automatic upgrades `orchestrator_version` must be set to `null`."
     }
     precondition {
-      condition     = !(var.workload_identity_enabled && !var.enable_preview_features)
-      error_message = "Workload Identity is a Preview feature. To enable Preview features, please set `enable_preview_features` to `true`. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
+      condition     = !(var.workload_identity_enabled && !var.preview_features_enabled)
+      error_message = "Workload Identity is a Preview feature. To enable Preview features, please set `preview_features_enabled` to `true`. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
     }
     precondition {
-      condition     = !(!var.oidc_issuer_enabled && var.workload_identity_enabled && !var.enable_preview_features)
+      condition     = !(!var.oidc_issuer_enabled && var.workload_identity_enabled && !var.preview_features_enabled)
       error_message = "To enable the Preview feature Workload Identity, `oidc_issuer_enabled` must also be set to `true`."
     }
     precondition {
-      condition     = !(var.image_cleaner_enabled && !var.enable_preview_features)
-      error_message = "Image Cleaner is a Preview feature. To enable Preview features, please set `enable_preview_features` to `true`. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
+      condition     = !(var.image_cleaner_enabled && !var.preview_features_enabled)
+      error_message = "Image Cleaner is a Preview feature. To enable Preview features, please set `preview_features_enabled` to `true`. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
+    }
+    precondition {
+      condition     = !(try(var.api_server_access_profile["vnet_integration_enabled"], false) && !var.preview_features_enabled)
+      error_message = "API Server VNet Integration is a Preview feature. To enable Preview features, please set `preview_features_enabled` to `true`. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
+    }
+    precondition {
+      condition     = !(var.public_network_access_enabled && var.private_cluster_enabled)
+      error_message = "Public and Private access cannot be enabled at the same time."
     }
   }
 }
@@ -258,7 +279,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   count = var.create_log_analytics_workspace ? 1 : 0
 
   location            = coalesce(var.log_analytics_workspace["location"], local.location)
-  name                = var.log_analytics_workspace["name"] == null ? "${var.cluster_name}-workspace" : var.log_analytics_workspace["name"]
+  name                = var.log_analytics_workspace["name"] == null ? "${var.name}-workspace" : var.log_analytics_workspace["name"]
   resource_group_name = coalesce(var.log_analytics_workspace["resource_group_name"], var.resource_group_name)
   retention_in_days   = var.log_analytics_workspace["retention_in_days"]
   sku                 = var.log_analytics_workspace["sku"]
@@ -281,6 +302,7 @@ resource "azurerm_log_analytics_solution" "main" {
   }
 }
 
+# Additional node pools
 resource "azurerm_kubernetes_cluster_node_pool" "main" {
   for_each = var.node_pools
 
@@ -313,17 +335,18 @@ resource "azurerm_kubernetes_cluster_node_pool" "main" {
   }
 }
 
+# Create a Container Registry, if required
 resource "azurerm_container_registry" "main" {
-  count = var.create_container_registry ? 1 : 0
+  count = var.container_registry_enabled ? 1 : 0
 
-  name                = coalesce(var.container_registry["name"], replace("${var.cluster_name}acr", "[^a-zA-Z0-9]+", ""))
+  name                = coalesce(try(var.container_registry["name"], null), replace("${var.name}acr", "[^a-zA-Z0-9]+", ""))
   resource_group_name = var.resource_group_name
   location            = local.location
-  sku                 = var.container_registry["sku"]
-  tags                = merge(var.tags, var.container_registry["tags"])
+  sku                 = try(var.container_registry["sku"], "Standard")
+  tags                = merge(var.tags, try(var.container_registry["tags"], {}))
 }
 
-# Private Endpoint
+# Create a Private Endpoint
 resource "azurerm_private_endpoint" "main" {
   for_each = var.azurerm_private_endpoint != null ? var.azurerm_private_endpoint : {}
 
@@ -352,6 +375,7 @@ resource "azurerm_private_endpoint" "main" {
   }
 }
 
+# Create a custom Private DNS Zone, if required
 resource "azurerm_private_dns_zone" "main" {
   count = var.create_custom_private_dns_zone ? 1 : 0
 
@@ -366,7 +390,7 @@ resource "azurerm_private_dns_zone" "main" {
   }
 }
 
-# Delay for permissions propagation
+# Delay for permissions propagation, or the deployment will fail waiting for permissions
 resource "time_sleep" "aks_creation_delay" {
   create_duration = "10m"
 
@@ -375,6 +399,7 @@ resource "time_sleep" "aks_creation_delay" {
   }
 }
 
+# Role assignments required to access the ACR and DNS Zone
 resource "azurerm_role_assignment" "dns" {
   count = var.create_custom_private_dns_zone ? 1 : 0
 
@@ -394,7 +419,7 @@ resource "azurerm_role_assignment" "vnet" {
 }
 
 resource "azurerm_role_assignment" "acr" {
-  count = var.create_container_registry ? 1 : 0
+  count = var.container_registry != null ? 1 : 0
 
   principal_id                     = azurerm_user_assigned_identity.main.principal_id
   role_definition_name             = "AcrPull"
@@ -402,6 +427,7 @@ resource "azurerm_role_assignment" "acr" {
   skip_service_principal_aad_check = true
 }
 
+# Locals
 locals {
-  location = replace(lower(var.location), " ", "")
+  location = replace(lower(var.location), " ", "") # Convert verbose locations to lowercase
 }

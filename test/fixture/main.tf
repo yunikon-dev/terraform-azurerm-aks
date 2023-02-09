@@ -21,16 +21,16 @@ resource "azurerm_subnet" "main" {
 module "terraform-azurerm-aks" {
   source = "../.."
 
-  resource_group_name       = azurerm_resource_group.main.name
-  cluster_name              = "testakscluster891104"
-  location                  = azurerm_resource_group.main.location
-  dns_prefix                = "testjeaks"
-  create_container_registry = true
+  resource_group_name        = azurerm_resource_group.main.name
+  name                       = "testakscluster891104"
+  location                   = azurerm_resource_group.main.location
+  dns_prefix                 = "testjeaks"
+  container_registry_enabled = true
 
   default_node_pool = {
-    vnet_subnet_id             = azurerm_subnet.main.id
-    enable_enable_auto_scaling = true
-    node_count                 = 1
+    vnet_subnet_id      = azurerm_subnet.main.id
+    enable_auto_scaling = true
+    node_count          = 1
   }
   node_pools = {
     "compute" = {
@@ -39,7 +39,7 @@ module "terraform-azurerm-aks" {
     }
   }
 
-  enable_azure_active_directory_role_based_access_control = true
+  azure_active_directory_role_based_access_control_enabled = true
 
   azure_active_directory_role_based_access_control = {
     managed            = true
