@@ -37,7 +37,7 @@ To get a local copy up and running, follow these simple example steps.
 1. Include this module in your Terraform code from the source
   ```hcl
   module {
-    source = "github.com/yunikon-dev/terraform-azurerm-aks"
+    source = "github.com/yunikon-nl/terraform-azurerm-aks"
   }
   ```
 2. Initialize your project to download the module
@@ -56,7 +56,7 @@ To get a local copy up and running, follow these simple example steps.
   ```
 3. Clone the repo
   ```sh
-  git clone https://github.com/yunikon-dev/terraform-azurerm-aks.git modules/
+  git clone https://github.com/yunikon-nl/terraform-azurerm-aks.git modules/
   ```
 4. Include this module in your Terraform code from the source
   ```hcl
@@ -70,14 +70,16 @@ To get a local copy up and running, follow these simple example steps.
   ```
 
 ## Usage
-_For more examples, please refer to the documentation._
+[//]: # (BEGIN_TF_DOCS)
+
+[//]: # (END_TF_DOCS)
 
 ## Roadmap
 - [x] Add Changelog
 - [x] Add License
 - [ ] Do something else
 
-See the [open issues](https://github.com/yunikon-dev/terraform-azurerm-aks/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/yunikon-nl/terraform-azurerm-aks/issues) for a full list of proposed features (and known issues).
 
 ## Contributing
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -101,7 +103,7 @@ This code base is owned by Yunikon.
 * Email: [code@yunikon.nl](mailto:code@yunikon.nl)
 
 
-Project Link: [yunikon-dev/terraform-azurerm-aks](https://github.com/yunikon-dev/terraform-azurerm-aks)
+Project Link: [yunikon-nl/terraform-azurerm-aks](https://github.com/yunikon-nl/terraform-azurerm-aks)
 
 
 ## Acknowledgments
