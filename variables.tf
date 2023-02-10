@@ -481,6 +481,11 @@ variable "container_registry" {
     name = string
     sku  = optional(string, "Standard")
     tags = optional(map(string))
+    private_endpoint = optional(object({
+      private_dns_zone_ids = optional(list(string), [])
+      is_manual_connection = optional(bool, false)
+      tags                 = optional(bool, null)
+    }))
   })
   default     = null
   description = "(Optional) Container Registry variables. When defined, creates a Container Registry and a role assignment that grants the Kubernetes Cluster `AcrPull` permissions. Refer to the [azurem_container_registry](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_registry) documentation for more information on these variables."

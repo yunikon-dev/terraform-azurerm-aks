@@ -351,21 +351,21 @@ resource "azurerm_container_registry" "main" {
 }
 
 resource "azurerm_private_endpoint" "acr" {
-  for_each = var.container_registry["private_endpoint"] != null && var.container_registry["sku"] == "Premium" ? ["azurerm_private_endpoint"] : []
+  count = try(var.container_registry["private_endpoint"], null) != null && try(var.container_registry["sku"], null) == "Premium" ? 1 : 0
 
-  name                = "${azurerm_container_registry.main.name}-private-endpoint"
-  location            = azurerm_container_registry.main.location
+  name                = "${azurerm_container_registry.main[0].name}-private-endpoint"
+  location            = azurerm_container_registry.main[0].location
   resource_group_name = var.resource_group_name
   subnet_id           = var.container_registry["private_endpoint"]["subnet_id"]
   tags                = merge(var.tags, try(var.container_registry["private_endpoint"]["tags"], {}))
 
   private_dns_zone_group {
-    name                 = "${azurerm_container_registry.main.name}-private-dns-zone-group"
+    name                 = "${azurerm_container_registry.main[0].name}-private-dns-zone-group"
     private_dns_zone_ids = var.container_registry["private_endpoint"]["private_dns_zone_ids"]
   }
 
   private_service_connection {
-    name                           = "${azurerm_container_registry.main.name}-private-service_connection"
+    name                           = "${azurerm_container_registry.main[0].name}-private-service_connection"
     private_connection_resource_id = azurerm_kubernetes_cluster.main.id
     is_manual_connection           = var.container_registry["private_endpoint"]["is_manual_connection"]
     subresource_names              = ["registry"]
