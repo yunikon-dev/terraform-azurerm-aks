@@ -432,7 +432,12 @@ resource "time_sleep" "aks_creation_delay" {
 }
 
 locals {
-  time_sleep_dependencies = "${try(azurerm_role_assignment.vnet[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.acr[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.dns[0].id, null) != null ? "" : ""}"
+  # Kubernetes Cluster needs to wait for role assignments to be created, or it will error out trying to authenticate before propagation
+  time_sleep_dependencies = <<-EOT
+    ${try(azurerm_role_assignment.vnet[0].id, null) != null ? "" : ""}
+    ${try(azurerm_role_assignment.acr[0].id, null) != null ? "" : ""}
+    ${try(azurerm_role_assignment.dns[0].id, null) != null ? "" : ""}
+  EOT
 }
 
 # Role assignments required to access the ACR and DNS Zone
