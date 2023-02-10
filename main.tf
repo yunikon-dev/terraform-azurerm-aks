@@ -424,10 +424,10 @@ resource "azurerm_private_dns_zone" "main" {
 
 # Delay for permissions propagation, or the deployment will fail waiting for permissions
 resource "time_sleep" "aks_creation_delay" {
-  create_duration = "5m"
+  create_duration = "2m"
 
   triggers = {
-    id   = "${azurerm_user_assigned_identity.main.id}${try(azurerm_role_assignment.dns[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.vnet[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.acr[0].id, null) != null ? "" : ""}"
+    id   = azurerm_user_assigned_identity.main.id
   }
 }
 
