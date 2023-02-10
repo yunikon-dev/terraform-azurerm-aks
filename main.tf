@@ -428,6 +428,9 @@ resource "time_sleep" "aks_creation_delay" {
 
   triggers = {
     id = azurerm_user_assigned_identity.main.id
+    dns = azurerm_role_assignment.dns[0].id
+    vnet = azurerm_role_assignment.vnet[0].id
+    acr = azurerm_role_assignment.acr[0].id
   }
 }
 
