@@ -1,0 +1,4 @@
+.terraform*
+.test-data
+*.tfstate*
+go.sum

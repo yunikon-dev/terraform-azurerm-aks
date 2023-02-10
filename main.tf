@@ -273,7 +273,7 @@ resource "azurerm_kubernetes_cluster" "main" {
       error_message = "Public and Private access cannot be enabled at the same time."
     }
     precondition {
-      condition     = !(var.create_custom_private_dns_zone && !var.virtual_network_id)
+      condition     = !(var.create_custom_private_dns_zone && var.virtual_network_id == null)
       error_message = "When creating a custom Private DNS Zone, a Virtual Network ID must be passed via `virtual_network_id`."
     }
   }
@@ -346,11 +346,39 @@ resource "azurerm_container_registry" "main" {
   name                = coalesce(try(var.container_registry["name"], null), replace("${var.name}acr", "[^a-zA-Z0-9]+", ""))
   resource_group_name = var.resource_group_name
   location            = local.location
-  sku                 = try(var.container_registry["sku"], "Standard")
+  sku                 = try(var.container_registry["sku"], "Basic")
   tags                = merge(var.tags, try(var.container_registry["tags"], {}))
 }
 
-# Create a Private Endpoint
+resource "azurerm_private_endpoint" "acr" {
+  for_each = var.container_registry["private_endpoint"] != null && var.container_registry["sku"] == "Premium" ? ["azurerm_private_endpoint"] : []
+
+  name                = "${azurerm_container_registry.main.name}-private-endpoint"
+  location            = azurerm_container_registry.main.location
+  resource_group_name = var.resource_group_name
+  subnet_id           = var.container_registry["private_endpoint"]["subnet_id"]
+  tags                = merge(var.tags, try(var.container_registry["private_endpoint"]["tags"], {}))
+
+  private_dns_zone_group {
+    name                 = "${azurerm_container_registry.main.name}-private-dns-zone-group"
+    private_dns_zone_ids = var.container_registry["private_endpoint"]["private_dns_zone_ids"]
+  }
+
+  private_service_connection {
+    name                           = "${azurerm_container_registry.main.name}-private-service_connection"
+    private_connection_resource_id = azurerm_kubernetes_cluster.main.id
+    is_manual_connection           = var.container_registry["private_endpoint"]["is_manual_connection"]
+    subresource_names              = ["registry"]
+  }
+
+  lifecycle {
+    ignore_changes = [
+      tags
+    ]
+  }
+}
+
+# Create a Private Endpoint for the Kubernetes Cluster
 resource "azurerm_private_endpoint" "main" {
   for_each = var.private_endpoint != null ? var.private_endpoint : {}
 

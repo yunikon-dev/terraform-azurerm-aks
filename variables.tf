@@ -519,7 +519,7 @@ variable "workload_autoscaler_profile" {
   description = "(Optional, Preview) Controls the Workload Autoscaler. Refer to [the documentation](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster#register-the-enableworkloadidentitypreview-feature-flag) for more information."
 }
 
-variable "azurerm_private_endpoint" {
+variable "private_endpoint" {
   type = map(object({
     subnet_id            = optional(string)
     private_dns_zone_ids = optional(list(string), [])
