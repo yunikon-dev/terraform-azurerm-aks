@@ -427,10 +427,7 @@ resource "time_sleep" "aks_creation_delay" {
   create_duration = "5m"
 
   triggers = {
-    id   = azurerm_user_assigned_identity.main.id
-    dns  = try(azurerm_role_assignment.dns[0].id, null)
-    vnet = try(azurerm_role_assignment.vnet[0].id, null)
-    acr  = try(azurerm_role_assignment.acr[0].id, null)
+    id   = "${azurerm_user_assigned_identity.main.id}${try(azurerm_role_assignment.dns[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.vnet[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.acr[0].id, null) != null ? "" : ""}"
   }
 }
 
