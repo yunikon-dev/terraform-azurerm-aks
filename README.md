@@ -176,14 +176,14 @@ No modules.
 
 | Name | Description |
 |------|-------------|
-| <a name="output_azurerm_container_registry"></a> [azurerm\_container\_registry](#output\_azurerm\_container\_registry) | Details of the Container Registry. |
-| <a name="output_azurerm_private_dns_zone"></a> [azurerm\_private\_dns\_zone](#output\_azurerm\_private\_dns\_zone) | Details of the Private DNS Zone. |
-| <a name="output_azurerm_private_endpoint"></a> [azurerm\_private\_endpoint](#output\_azurerm\_private\_endpoint) | Details of the Private Endpoint. |
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | Name of the Kubernetes Cluster. |
+| <a name="output_container_registry"></a> [container\_registry](#output\_container\_registry) | Details of the Container Registry. |
 | <a name="output_kubernetes_cluster"></a> [kubernetes\_cluster](#output\_kubernetes\_cluster) | Details of the Kubernetes Cluster. |
 | <a name="output_log_analytics_solution"></a> [log\_analytics\_solution](#output\_log\_analytics\_solution) | Details of the Log Analytics Solution. |
 | <a name="output_log_analytics_workspace"></a> [log\_analytics\_workspace](#output\_log\_analytics\_workspace) | Details of the Log Analytics Workspace. |
 | <a name="output_node_pools"></a> [node\_pools](#output\_node\_pools) | Details of all additional Node Pools. |
+| <a name="output_private_dns_zone"></a> [private\_dns\_zone](#output\_private\_dns\_zone) | Details of the Private DNS Zone. |
+| <a name="output_private_endpoint"></a> [private\_endpoint](#output\_private\_endpoint) | Details of the Private Endpoint. |
 | <a name="output_tls_private_key"></a> [tls\_private\_key](#output\_tls\_private\_key) | Details of the generated TLS Private Key. |
 | <a name="output_user_assigned_identity"></a> [user\_assigned\_identity](#output\_user\_assigned\_identity) | Details of the Kubernetes Cluster's User Assigned Identity. |
 
