@@ -427,8 +427,12 @@ resource "time_sleep" "aks_creation_delay" {
   create_duration = "5m"
 
   triggers = {
-    id   = "${azurerm_user_assigned_identity.main.id}${try(azurerm_role_assignment.dns[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.vnet[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.acr[0].id, null) != null ? "" : ""}"
+    id = "${azurerm_user_assigned_identity.main.id}${local.time_sleep_dependencies}"
   }
+}
+
+locals {
+  time_sleep_dependencies = "${try(azurerm_role_assignment.vnet[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.acr[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.dns[0].id, null) != null ? "" : ""}"
 }
 
 # Role assignments required to access the ACR and DNS Zone

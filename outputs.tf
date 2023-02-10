@@ -30,18 +30,19 @@ output "node_pools" {
   description = "Details of all additional Node Pools."
 }
 
-output "azurerm_container_registry" {
-  value       = azurerm_container_registry.main
+output "container_registry" {
+  value       = azurerm_container_registry.main[0]
   description = "Details of the Container Registry."
+  sensitive   = true
 }
 
-output "azurerm_private_endpoint" {
-  value       = try(azurerm_private_endpoint.main, null)
+output "private_endpoint" {
+  value       = try(azurerm_private_endpoint.main[0], null)
   description = "Details of the Private Endpoint."
 }
 
-output "azurerm_private_dns_zone" {
-  value       = try(azurerm_private_dns_zone.main, null)
+output "private_dns_zone" {
+  value       = try(azurerm_private_dns_zone.main[0], null)
   description = "Details of the Private DNS Zone."
 }
 

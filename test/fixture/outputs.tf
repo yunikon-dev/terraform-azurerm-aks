@@ -25,3 +25,12 @@ output "user_assigned_identity" {
 output "node_pools" {
   value = module.terraform-azurerm-aks.node_pools
 }
+
+output "container_registry" {
+  value     = module.terraform-azurerm-aks.container_registry
+  sensitive = true
+}
+
+output "private_dns_zone" {
+  value = module.terraform-azurerm-aks.private_dns_zone
+}
