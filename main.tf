@@ -431,9 +431,9 @@ resource "time_sleep" "aks_creation_delay" {
   }
 
   depends_on = [
-    try(azurerm_role_assignment.dns[0].id, null),
-    try(azurerm_role_assignment.vnet[0].id, null),
-    try(azurerm_role_assignment.acr[0].id, null)
+    azurerm_role_assignment.dns,
+    azurerm_role_assignment.vnet,
+    azurerm_role_assignment.acr
   ]
 }
 
