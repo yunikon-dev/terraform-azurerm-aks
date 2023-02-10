@@ -428,10 +428,13 @@ resource "time_sleep" "aks_creation_delay" {
 
   triggers = {
     id = azurerm_user_assigned_identity.main.id
-    dns = azurerm_role_assignment.dns[0].id
-    vnet = azurerm_role_assignment.vnet[0].id
-    acr = azurerm_role_assignment.acr[0].id
   }
+
+  depends_on = [
+    try(azurerm_role_assignment.dns[0].id, null),
+    try(azurerm_role_assignment.vnet[0].id, null),
+    try(azurerm_role_assignment.acr[0].id, null)
+  ]
 }
 
 # Role assignments required to access the ACR and DNS Zone
