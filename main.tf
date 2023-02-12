@@ -170,10 +170,10 @@ resource "azurerm_kubernetes_cluster" "main" {
   }
 
   dynamic "api_server_access_profile" {
-    for_each = var.public_network_access_enabled || var.api_server_access_profile != null ? ["api_server_access_profile"] : []
+    for_each = var.api_server_access_profile != null ? ["api_server_access_profile"] : []
 
     content {
-      authorized_ip_ranges     = var.public_network_access_enabled ? concat(["0.0.0.0/32"], try(var.api_server_access_profile["authorized_ip_ranges"], [])) : try(var.api_server_access_profile["authorized_ip_ranges"], [])
+      authorized_ip_ranges     = try(var.api_server_access_profile["authorized_ip_ranges"], [])
       subnet_id                = try(var.api_server_access_profile["subnet_id"], null)
       vnet_integration_enabled = var.preview_features_enabled && try(var.api_server_access_profile["vnet_integration_enabled"], null) != null ? try(var.api_server_access_profile["vnet_integration_enabled"], false) : false
     }
@@ -429,11 +429,7 @@ resource "time_sleep" "aks_creation_delay" {
 
 locals {
   # Kubernetes Cluster needs to wait for role assignments to be created, or it will error out trying to authenticate before propagation
-  time_sleep_dependencies = <<-EOT
-    ${try(azurerm_role_assignment.vnet[0].id, null) != null ? "" : ""}
-    ${try(azurerm_role_assignment.acr[0].id, null) != null ? "" : ""}
-    ${try(azurerm_role_assignment.dns[0].id, null) != null ? "" : ""}
-  EOT
+  time_sleep_dependencies = "${try(azurerm_role_assignment.vnet[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.acr[0].id, null) != null ? "" : ""}${try(azurerm_role_assignment.dns[0].id, null) != null ? "" : ""}"
 }
 
 # Role assignments required to access the ACR and DNS Zone
