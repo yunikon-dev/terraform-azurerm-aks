@@ -25,18 +25,13 @@ module "terraform-azurerm-aks" {
   name                       = "testakscluster891104"
   location                   = azurerm_resource_group.main.location
   dns_prefix                 = "testjeaks"
-  container_registry_enabled = true
+  container_registry_enabled = false
+  public_network_access_enabled = true
 
   default_node_pool = {
     vnet_subnet_id      = azurerm_subnet.main.id
     enable_auto_scaling = true
     node_count          = 1
-  }
-  node_pools = {
-    "compute" = {
-      node_count          = 1
-      enable_auto_scaling = false
-    }
   }
 
   azure_active_directory_role_based_access_control_enabled = true

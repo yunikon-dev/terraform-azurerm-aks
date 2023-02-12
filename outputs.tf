@@ -31,7 +31,7 @@ output "node_pools" {
 }
 
 output "container_registry" {
-  value       = azurerm_container_registry.main[0]
+  value       = try(azurerm_container_registry.main[0], null)
   description = "Details of the Container Registry."
   sensitive   = true
 }

@@ -35,8 +35,8 @@ resource "azurerm_kubernetes_cluster" "main" {
   local_account_disabled              = var.local_account_disabled
   oidc_issuer_enabled                 = var.oidc_issuer_enabled
   open_service_mesh_enabled           = var.open_service_mesh_enabled
-  private_cluster_enabled             = var.private_cluster_enabled
-  public_network_access_enabled       = var.public_network_access_enabled
+  private_cluster_enabled             = local.private_cluster ? true : false
+  public_network_access_enabled       = !local.private_cluster ? true : false
   private_cluster_public_fqdn_enabled = var.private_cluster_public_fqdn_enabled
   private_dns_zone_id                 = try(azurerm_private_dns_zone.main[0].id, var.private_dns_zone_id, null)
   role_based_access_control_enabled   = var.azure_active_directory_role_based_access_control["azure_rbac_enabled"] ? true : coalesce(var.role_based_access_control_enabled, false)
@@ -173,9 +173,9 @@ resource "azurerm_kubernetes_cluster" "main" {
     for_each = var.public_network_access_enabled || var.api_server_access_profile != null ? ["api_server_access_profile"] : []
 
     content {
-      authorized_ip_ranges     = var.public_network_access_enabled ? concat(["0.0.0.0/32"], try(var.api_server_access_profile["authorized_ip_ranges"], [])) : var.api_server_access_profile["authorized_ip_ranges"]
-      subnet_id                = var.api_server_access_profile["subnet_id"]
-      vnet_integration_enabled = var.preview_features_enabled && var.api_server_access_profile["vnet_integration_enabled"] != null ? var.api_server_access_profile["vnet_integration_enabled"] : false
+      authorized_ip_ranges     = var.public_network_access_enabled ? concat(["0.0.0.0/32"], try(var.api_server_access_profile["authorized_ip_ranges"], [])) : try(var.api_server_access_profile["authorized_ip_ranges"], [])
+      subnet_id                = try(var.api_server_access_profile["subnet_id"], null)
+      vnet_integration_enabled = var.preview_features_enabled && try(var.api_server_access_profile["vnet_integration_enabled"], null) != null ? try(var.api_server_access_profile["vnet_integration_enabled"], false) : false
     }
   }
 
@@ -267,10 +267,6 @@ resource "azurerm_kubernetes_cluster" "main" {
     precondition {
       condition     = !(try(var.api_server_access_profile["vnet_integration_enabled"], false) && !var.preview_features_enabled)
       error_message = "API Server VNet Integration is a Preview feature. To enable Preview features, please set `preview_features_enabled` to `true`. Be aware that Microsoft's Preview features are untested and may never graduate to General Availability."
-    }
-    precondition {
-      condition     = !(var.public_network_access_enabled && var.private_cluster_enabled)
-      error_message = "Public and Private access cannot be enabled at the same time."
     }
     precondition {
       condition     = !(var.create_custom_private_dns_zone && var.virtual_network_id == null)
@@ -471,4 +467,5 @@ resource "azurerm_role_assignment" "acr" {
 # Locals
 locals {
   location = replace(lower(var.location), " ", "") # Convert verbose locations to lowercase
+  private_cluster = var.public_network_access_enabled && !var.private_cluster_enabled ? true : false
 }
