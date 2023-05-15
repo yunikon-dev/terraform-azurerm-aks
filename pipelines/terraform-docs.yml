@@ -11,7 +11,7 @@ parameters:
 - name: terraformDocsVersion
   displayName: "terraform-docs version:"
   type: string
-  default: "0.16.0"
+  default: ""
 
 - name: branchToPush
   displayName: "Push to branch:"

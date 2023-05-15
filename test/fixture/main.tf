@@ -27,6 +27,9 @@ module "terraform-azurerm-aks" {
   dns_prefix                 = "testjeaks"
   container_registry_enabled = false
   public_network_access_enabled = true
+  workload_identity_enabled = true
+  preview_features_enabled = true
+  oidc_issuer_enabled = true
 
   default_node_pool = {
     vnet_subnet_id      = azurerm_subnet.main.id
